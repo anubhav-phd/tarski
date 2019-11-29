@@ -1,0 +1,84 @@
+'Benchmark_Name','Domain',' Grounding-status','Comments'
+'ipc-2014/seq-sat','Tetris','OK','Had to specify type of ''pieces'''
+'ipc-2014/seq-sat','Openstacks','OK',
+'ipc-2014/seq-sat','Childsnack','OK',
+'ipc-2014/seq-sat','CaveDiving','OK',
+'ipc-2014/seq-sat','Floortile','OK','Had to specify ''action-costs'' requirements'
+'ipc-2014/seq-sat','Visitall','OK',
+'ipc-2014/seq-sat','CityCar','OK',
+'ipc-2014/seq-sat','Transport','OK',
+'ipc-2014/seq-sat','Hiking','OK',
+'ipc-2014/seq-sat','GED','Error','Case sensitivity issue'
+'ipc-2014/seq-sat','Barman','OK',
+'ipc-2014/seq-sat','Thoughtful','OK',
+'ipc-2014/seq-sat','Parking','OK',
+'ipc-2014/seq-sat','Maintenance','OK',
+'ipc-2018/sat','nurikabe','OK',
+'ipc-2018/sat','caldera','OK',
+'ipc-2018/sat','settlers','OK',
+'ipc-2018/sat','flashfill','OK','Need to verify generated plans'
+'ipc-2018/sat','organic-synthesis','OK',
+'ipc-2018/sat','caldera-split','OK',
+'ipc-2018/sat','termes','OK',
+'ipc-2018/sat','agricola','OK',
+'ipc-2018/sat','snake','OK',
+'ipc-2018/sat','organic-synthesis-split','OK',
+'ipc-2018/sat','spider','OK',
+'ipc-2018/sat','data-network','OK',
+'ipc-2006','trucks','OK',
+'ipc-2006','pathways','Error','Attached error log'
+'ipc-2006','storage','Error','Attached error log'
+'ipc-2006','pipesworld','Error','Attached error log'
+'ipc-2006','rovers','OK',
+'ipc-2006','openstacks','OK',
+'ipc-2006','TPP','OK',
+'ipc-2011','woodworking','OK',
+'ipc-2011','parcprinter','Error','Attached error log'
+'ipc-2011','elevators','OK',
+'ipc-2011','barman','OK',
+'ipc-2011','nomystery','Error','Attached error log'
+'ipc-2011','transport','OK',
+'ipc-2011','blocksworld','OK',
+'ipc-2011','parking','OK',
+'ipc-2011','tidybot','Error','Attached error log'
+'ipc-2011','visitall','OK',
+'ipc-2011','floortile','OK','Had to specify ''action-costs'' requirements'
+'ipc-2011','openstacks','OK',
+'ipc-2011','sokoban','OK',
+'ipc-2011','pegsol','OK',
+'ipc-2011','scanalyzer','OK',
+'ecai12','tpp','OK',
+'ecai12','barman-sat14-strips','OK',
+'ecai12','8rand_puzzle','OK',
+'ecai12','ferry','OK',
+'ecai12','gripper','OK',
+'ecai12','zenotravel','OK',
+'ecai12','storage','Error','Attached error log'
+'ecai12','trucks-strips','Error','Attached error log'
+'ecai12','mprime','OK',
+'ecai12','tidybot-sat11-strips','Error','Attached error log'
+'ecai12','pipesworld-notankage','Error','Attached error log'
+'ecai12','elevators-sat11-strips','OK',
+'ecai12','psr-small','Error','Attached error log'
+'ecai12','logistics','Error','Attached error log'
+'ecai12','FreeCell','OK',
+'ecai12','woodworking-sat11-strips','OK',
+'ecai12','depots','Error','Attached error log'
+'ecai12','satellite','OK',
+'ecai12','miconic','OK',
+'ecai12','openstacks-sat14-strips','OK',
+'ecai12','rovers','OK',
+'ecai12','pipesworld-tankage','Error','Attached error log'
+'ecai12','grid','OK',
+'ecai12','transport-sat14-strips','OK',
+'ecai12','floortile-sat14-strips','OK',
+'ecai12','scanalyzer-sat11-strips','OK',
+'ecai12','cybersec','Error','Attached error log, cachegrind logs, took 10 minutes to just load and parse the pddl, whereas FD took 18 seconds'
+'ecai12','nomystery-sat11-strips','Error','Attached error log'
+'ecai12','visitall-sat14-strips','OK',
+'ecai12','driver','Error','Attached error log'
+'ecai12','Blocksworld','OK',
+'ecai12','mystery','OK',
+'ecai12','parking-sat14-strips','OK',
+'ecai12','pegsol-sat11-strips','OK',
+'ecai12','parcprinter-sat11-strips','Error','Attached error log'
