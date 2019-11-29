@@ -110,7 +110,7 @@ class CompoundFormula(Formula):
     def __str__(self):
         if self.connective == Connective.Not:
             assert len(self.subformulas) == 1
-            return "{} ({})".format(self.connective, str(self.subformulas[0]))
+            return "({} {})".format(self.connective, str(self.subformulas[0]))
 
         inner = " {} ".format(self.connective).join(str(f) for f in self.subformulas)
         return "({})".format(inner)
@@ -122,7 +122,13 @@ class CompoundFormula(Formula):
                self.subformulas == other.subformulas
 
     def __hash__(self):
-        return hash((self.__class__, self.connective, self.subformulas))
+        element_hashes = [self.__class__, self.connective]
+        # TODO: formulas need to be flattened if we want to hash them,
+        # it would be good to check if there is a better way of flattening
+        # than this
+        for phi in self.subformulas:
+            element_hashes += [hash(phi)]
+        return hash(tuple(element_hashes))
 
 
 class QuantifiedFormula(Formula):
@@ -202,16 +208,12 @@ def is_neg(phi: Formula):
 
 
 def implies(phi, psi):
+    """ Create the implication phi -> psi """
     return lor(neg(phi), psi)
 
 
 def equiv(phi, psi):
-    # MRJ: I choose the form below in the code over
-    #
-    # lor(land(phi,psi), land(neg(psi),neg(phi)))
-    #
-    # as I find it easier to transform into a
-    # given normal form.
+    """ Create the bi-implication phi <-> psi """
     return land(implies(phi, psi), implies(psi, phi))
 
 

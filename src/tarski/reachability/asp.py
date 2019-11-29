@@ -7,11 +7,11 @@ from ..syntax.transform import remove_quantifiers, QuantifierEliminationMode
 from ..syntax.builtins import symbol_complements
 from ..syntax.ops import free_variables
 from ..syntax import Formula, Atom, CompoundFormula, Connective, Term, Variable, Constant, Tautology, \
-    BuiltinPredicateSymbol, QuantifiedFormula, Quantifier
+    BuiltinPredicateSymbol, QuantifiedFormula, Quantifier, CompoundTerm
 from ..syntax.sorts import parent
-from ..fstrips import Problem, SingleEffect, UniversalEffect, AddEffect, DelEffect
+from ..fstrips import Problem, SingleEffect, UniversalEffect, AddEffect, DelEffect, FunctionalEffect
 
-SOLVABLE = "solvable"
+SOLVABLE = "_solvable_"
 
 
 def create_reachability_lp(problem: Problem):
@@ -23,6 +23,14 @@ def create_reachability_lp(problem: Problem):
 
 
 class ReachabilityLPCompiler:
+    """ A class that handles the compilation of planning problem into suitable logic programs to perform reachability
+    analysis. The compilation follows roughly the relaxed reachability analysis outlined in Section 6 of
+
+        Helmert, M. (2009). Concise finite-domain representations for PDDL planning tasks.
+        Artificial Intelligence, 173(5-6), 503-535.
+
+    albeit there are some differences which so far we haven't properly described and analyzed.
+    """
     def __init__(self, problem: Problem, lp):
         self.problem = problem
         self.lp = lp
@@ -47,18 +55,25 @@ class ReachabilityLPCompiler:
             if not s.builtin:  # TODO Decide what to do with builtins
                 p = parent(s)
                 if p is not None:
-                    lp.rule(self.lp_atom(p.name, [_var()]), [self.lp_atom(s.name, [_var()])])
+                    lp.rule(self.lp_atom(p.name, [_var()], prefix='type'), [self.lp_atom(s.name, [_var()])])
 
         # Process all atoms in the initial state, e.g. "on(b1, b2)."
         for atom in problem.init.as_atoms():
-            assert isinstance(atom, Atom)
+            if isinstance(atom, tuple) and isinstance(atom[0], CompoundTerm) and atom[0].symbol.symbol == 'total-cost':
+                continue  # Ignore total-cost effects
+            if not isinstance(atom, Atom):
+                assert isinstance(atom, tuple) and len(atom) == 2
+                t, v = atom
+                raise RuntimeError(f'ReachabilityLPCompiler cannot handle functional atoms in the initial state '
+                                   f'such as "{t} := {v}"')
             lp.rule(self.tarski_atom_to_lp_atom(atom))
 
         # Process all actions
         for _, action in problem.actions.items():
             # Construct the head and part of the body of the action atom, e.g. "move(X, Y) :- object(X), object(Y)"
             # Note that we need to capitalize the parameters of the action schema, as they are LP variables.
-            action_atom = self.lp_atom(action.name, [make_variable_name(v.symbol) for v in action.parameters])
+            action_atom = self.lp_atom(action.name, [make_variable_name(v.symbol) for v in action.parameters],
+                                       prefix='action')
             body = [self.lp_type_atom_from_term(v) for v in action.parameters]
 
             # Remove universal quantifiers and add precondition atoms to the body
@@ -142,7 +157,8 @@ class ReachabilityLPCompiler:
 
         raise RuntimeError('Unexpected formula "{}" with type "{}"'.format(f, type(f)))
 
-    def process_term(self, t: Term):
+    @staticmethod
+    def process_term(t: Term):
         """ Return the name of the LP constant corresponding to the given term. For instance, the variable "from" of
         type "place" will get transformed into a name "From" (capitalized), whereas the constant "b1" of type block will
         get transformed into a name "b1". We assume that the type information is used elsewhere. """
@@ -164,29 +180,36 @@ class ReachabilityLPCompiler:
             head = self.tarski_atom_to_lp_atom(eff.atom)
             condition = remove_quantifiers(lang, eff.condition, QuantifierEliminationMode.Forall)
             return head, self.process_formula(condition)
-        elif isinstance(eff, DelEffect):
+
+        if isinstance(eff, DelEffect):
             return None, []  # Simply ignore the delete effects
 
-        raise RuntimeError('Unexpected effect "{}" with type "{}"'.format(eff, type(eff)))
+        if isinstance(eff, FunctionalEffect):
+            if eff.lhs.symbol.symbol == 'total-cost':
+                return None, []  # We ignore total-cost effects
+            raise RuntimeError(f'ReachabilityLPCompiler cannot handle functional effects such as "{eff}"')
 
-    def tarski_atom_to_lp_atom(self, atom: Atom):
-        return self.lp_atom(atom.predicate.symbol, [self.process_term(sub) for sub in atom.subterms])
+        raise RuntimeError(f'Unexpected effect "{eff}" with type "{type(eff)}"')
+
+    def tarski_atom_to_lp_atom(self, atom: Atom, prefix=''):
+        return self.lp_atom(atom.predicate.symbol, [self.process_term(sub) for sub in atom.subterms], prefix='atom')
 
     def lp_type_atom_from_term(self, t: Term):
         """ Return a LP atom with type information from a given term, e.g. of the form block(b) for a constant,
         or block(X) for a variable. """
         if not isinstance(t, (Constant, Variable)):
-            raise RuntimeError("Rechability logic program not ready for functional terms")
+            raise RuntimeError(f'ReachabilityLPCompiler cannot handle functional terms such as "{t}"')
         name = make_variable_name(t.symbol) if isinstance(t, Variable) else _uncapitalize(t.symbol)
-        return self.lp_atom(t.sort.name, [name])
+        return self.lp_atom(t.sort.name, [name], prefix='type')
 
-    def lp_atom(self, symbol, args=None):
+    def lp_atom(self, symbol, args=None, prefix=''):
         args = args or []
         infix = False
         if isinstance(symbol, BuiltinPredicateSymbol):  # Special treatment for built-ins as =, !=, <, etc.
             symbol = symbol.value
             infix = True
-        return LPAtom(self.tr.normalize(symbol), [self.tr.normalize(a) for a in args], infix=infix)
+            prefix = ''
+        return LPAtom(self.tr.normalize(symbol, prefix=prefix), [self.tr.normalize(a) for a in args], infix=infix)
 
 
 class LPAtom:
@@ -248,11 +271,13 @@ class Translator:
         self.d = dict()
         self.inv = dict()
 
-    def normalize(self, name: str):
+    def normalize(self, name: str, prefix=''):
         """ Translate a given name and keep the translation """
         translated = self.d.get(name, None)
         if translated is None:
             translated = sanitize(name)
+            if prefix:
+                translated = prefix + '_' + translated
             if name in self.inv or translated in self.inv:
                 raise RuntimeError('Sanitization of STRIPS name for ASP purposes would create a name clash for key '
                                    '"{}"'.format(name))

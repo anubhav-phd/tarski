@@ -5,7 +5,7 @@ from collections import defaultdict
 import pytest
 from tarski import theories, Term, Constant
 from tarski.fstrips import fstrips
-from tarski.syntax import symref, CompoundFormula, Atom, ite, AggregateCompoundTerm, CompoundTerm
+from tarski.syntax import symref, CompoundFormula, Atom, ite, AggregateCompoundTerm, CompoundTerm, lor
 from tarski.theories import Theory
 from tarski import errors as err
 from tarski import fstrips as fs
@@ -336,3 +336,10 @@ def test_term_hash_raises_exception():
     atom = f(c) == c
     counter[atom] += 2
     assert counter[atom] == 2
+
+
+def test_syntax_exceptions():
+    from tarski.errors import TarskiError
+    with pytest.raises(TarskiError):
+        atoms = []
+        _ = lor(*atoms, flat=True)
