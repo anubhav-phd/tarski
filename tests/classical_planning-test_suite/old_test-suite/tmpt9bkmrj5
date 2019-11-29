@@ -1,0 +1,320 @@
+count(n0).
+count(n1).
+count(n2).
+count(n3).
+count(n4).
+count(n5).
+count(n6).
+count(n7).
+count(n8).
+count(n9).
+count(n10).
+count(n11).
+count(n12).
+count(n13).
+count(n14).
+count(n15).
+count(n16).
+count(n17).
+count(n18).
+count(n19).
+count(n20).
+order(o1).
+order(o2).
+order(o3).
+order(o4).
+order(o5).
+order(o6).
+order(o7).
+order(o8).
+order(o9).
+order(o10).
+order(o11).
+order(o12).
+order(o13).
+order(o14).
+order(o15).
+order(o16).
+order(o17).
+order(o18).
+order(o19).
+order(o20).
+product(p1).
+product(p2).
+product(p3).
+product(p4).
+product(p5).
+product(p6).
+product(p7).
+product(p8).
+product(p9).
+product(p10).
+product(p11).
+product(p12).
+product(p13).
+product(p14).
+product(p15).
+product(p16).
+product(p17).
+product(p18).
+product(p19).
+product(p20).
+object(X) :- order(X).
+object(X) :- product(X).
+object(X) :- count(X).
+machine__available().
+next__count(n15, n16).
+next__count(n9, n10).
+next__count(n12, n13).
+next__count(n19, n20).
+next__count(n14, n15).
+next__count(n4, n5).
+next__count(n8, n9).
+next__count(n10, n11).
+next__count(n17, n18).
+next__count(n0, n1).
+next__count(n7, n8).
+next__count(n3, n4).
+next__count(n18, n19).
+next__count(n5, n6).
+next__count(n16, n17).
+next__count(n11, n12).
+next__count(n6, n7).
+next__count(n2, n3).
+next__count(n1, n2).
+next__count(n13, n14).
+stacks__avail(n0).
+waiting(o2).
+waiting(o7).
+waiting(o4).
+waiting(o1).
+waiting(o3).
+waiting(o14).
+waiting(o6).
+waiting(o18).
+waiting(o9).
+waiting(o19).
+waiting(o8).
+waiting(o16).
+waiting(o13).
+waiting(o11).
+waiting(o20).
+waiting(o10).
+waiting(o5).
+waiting(o12).
+waiting(o17).
+waiting(o15).
+includes(o9, p20).
+includes(o20, p18).
+includes(o15, p12).
+includes(o10, p20).
+includes(o15, p1).
+includes(o5, p5).
+includes(o12, p8).
+includes(o18, p2).
+includes(o14, p20).
+includes(o17, p9).
+includes(o4, p13).
+includes(o12, p12).
+includes(o8, p11).
+includes(o17, p7).
+includes(o5, p2).
+includes(o18, p5).
+includes(o13, p16).
+includes(o7, p2).
+includes(o13, p13).
+includes(o4, p16).
+includes(o3, p11).
+includes(o5, p4).
+includes(o7, p14).
+includes(o19, p2).
+includes(o6, p19).
+includes(o17, p16).
+includes(o8, p17).
+includes(o13, p14).
+includes(o16, p8).
+includes(o18, p3).
+includes(o1, p10).
+includes(o18, p1).
+includes(o20, p10).
+includes(o10, p6).
+includes(o18, p8).
+includes(o16, p10).
+includes(o17, p10).
+includes(o10, p19).
+includes(o9, p16).
+includes(o11, p1).
+includes(o17, p6).
+includes(o2, p13).
+includes(o3, p2).
+includes(o2, p7).
+includes(o9, p1).
+includes(o9, p17).
+includes(o18, p11).
+includes(o4, p3).
+includes(o12, p11).
+includes(o2, p5).
+includes(o9, p9).
+includes(o13, p4).
+includes(o19, p4).
+includes(o9, p18).
+includes(o17, p3).
+includes(o7, p16).
+includes(o4, p12).
+includes(o9, p6).
+includes(o18, p16).
+includes(o13, p6).
+includes(o17, p20).
+includes(o11, p18).
+includes(o6, p17).
+includes(o17, p14).
+includes(o19, p7).
+includes(o14, p17).
+includes(o4, p5).
+includes(o17, p4).
+includes(o2, p19).
+includes(o6, p12).
+includes(o5, p15).
+includes(o8, p8).
+includes(o13, p9).
+includes(o4, p1).
+includes(o20, p15).
+includes(o7, p7).
+includes(o20, p17).
+includes(o12, p3).
+includes(o18, p7).
+includes(o11, p7).
+includes(o11, p14).
+includes(o7, p9).
+includes(o5, p11).
+includes(o17, p15).
+includes(o7, p4).
+includes(o17, p13).
+includes(o9, p12).
+includes(o13, p5).
+includes(o10, p16).
+includes(o20, p8).
+includes(o7, p3).
+includes(o18, p10).
+includes(o12, p18).
+includes(o1, p15).
+includes(o3, p8).
+includes(o11, p13).
+includes(o18, p4).
+includes(o1, p19).
+includes(o12, p17).
+includes(o2, p2).
+includes(o7, p11).
+includes(o15, p13).
+includes(o18, p12).
+includes(o18, p9).
+includes(o1, p6).
+includes(o5, p8).
+includes(o19, p11).
+includes(o2, p14).
+includes(o14, p19).
+includes(o17, p1).
+includes(o13, p18).
+includes(o14, p15).
+includes(o12, p9).
+includes(o4, p14).
+includes(o11, p9).
+includes(o17, p5).
+includes(o11, p12).
+includes(o11, p3).
+includes(o18, p14).
+includes(o13, p7).
+setup__machine(P, Avail) :- product(P), count(Avail), machine__available(), 1 = 1, stacks__avail(Avail).
+machine__configured(P) :- setup__machine(P, Avail).
+__f1(P) :- 1 = 1.
+__f1(P) :- started(o10).
+__f2(P) :- 1 = 1.
+__f2(P) :- started(o5).
+__f3(P) :- 1 = 1.
+__f3(P) :- started(o13).
+__f4(P) :- 1 = 1.
+__f4(P) :- started(o20).
+__f5(P) :- 1 = 1.
+__f5(P) :- started(o6).
+__f6(P) :- 1 = 1.
+__f6(P) :- started(o17).
+__f7(P) :- 1 = 1.
+__f7(P) :- started(o19).
+__f8(P) :- 1 = 1.
+__f8(P) :- started(o8).
+__f9(P) :- 1 = 1.
+__f9(P) :- started(o15).
+__f10(P) :- 1 = 1.
+__f10(P) :- started(o16).
+__f11(P) :- 1 = 1.
+__f11(P) :- started(o12).
+__f12(P) :- 1 = 1.
+__f12(P) :- started(o4).
+__f13(P) :- 1 = 1.
+__f13(P) :- started(o14).
+__f14(P) :- 1 = 1.
+__f14(P) :- started(o3).
+__f15(P) :- 1 = 1.
+__f15(P) :- started(o9).
+__f16(P) :- 1 = 1.
+__f16(P) :- started(o1).
+__f17(P) :- 1 = 1.
+__f17(P) :- started(o11).
+__f18(P) :- 1 = 1.
+__f18(P) :- started(o2).
+__f19(P) :- 1 = 1.
+__f19(P) :- started(o7).
+__f20(P) :- 1 = 1.
+__f20(P) :- started(o18).
+make__product(P, Avail) :- product(P), count(Avail), machine__configured(P), __f1(P), __f2(P), __f3(P), __f4(P), __f5(P), __f6(P), __f7(P), __f8(P), __f9(P), __f10(P), __f11(P), __f12(P), __f13(P), __f14(P), __f15(P), __f16(P), __f17(P), __f18(P), __f19(P), __f20(P), stacks__avail(Avail).
+machine__available() :- make__product(P, Avail).
+made(P) :- make__product(P, Avail).
+start__order(O, Avail, New__avail) :- order(O), count(Avail), count(New__avail), waiting(O), stacks__avail(Avail), next__count(New__avail, Avail).
+started(O) :- start__order(O, Avail, New__avail).
+stacks__avail(New__avail) :- start__order(O, Avail, New__avail).
+__f21(O) :- 1 = 1.
+__f21(O) :- made(p15).
+__f22(O) :- 1 = 1.
+__f22(O) :- made(p20).
+__f23(O) :- 1 = 1.
+__f23(O) :- made(p14).
+__f24(O) :- 1 = 1.
+__f24(O) :- made(p9).
+__f25(O) :- 1 = 1.
+__f25(O) :- made(p2).
+__f26(O) :- 1 = 1.
+__f26(O) :- made(p12).
+__f27(O) :- 1 = 1.
+__f27(O) :- made(p7).
+__f28(O) :- 1 = 1.
+__f28(O) :- made(p11).
+__f29(O) :- 1 = 1.
+__f29(O) :- made(p10).
+__f30(O) :- 1 = 1.
+__f30(O) :- made(p6).
+__f31(O) :- 1 = 1.
+__f31(O) :- made(p4).
+__f32(O) :- 1 = 1.
+__f32(O) :- made(p8).
+__f33(O) :- 1 = 1.
+__f33(O) :- made(p19).
+__f34(O) :- 1 = 1.
+__f34(O) :- made(p18).
+__f35(O) :- 1 = 1.
+__f35(O) :- made(p1).
+__f36(O) :- 1 = 1.
+__f36(O) :- made(p3).
+__f37(O) :- 1 = 1.
+__f37(O) :- made(p16).
+__f38(O) :- 1 = 1.
+__f38(O) :- made(p17).
+__f39(O) :- 1 = 1.
+__f39(O) :- made(p13).
+__f40(O) :- 1 = 1.
+__f40(O) :- made(p5).
+ship__order(O, Avail, New__avail) :- order(O), count(Avail), count(New__avail), started(O), __f21(O), __f22(O), __f23(O), __f24(O), __f25(O), __f26(O), __f27(O), __f28(O), __f29(O), __f30(O), __f31(O), __f32(O), __f33(O), __f34(O), __f35(O), __f36(O), __f37(O), __f38(O), __f39(O), __f40(O), stacks__avail(Avail), next__count(Avail, New__avail).
+shipped(O) :- ship__order(O, Avail, New__avail).
+stacks__avail(New__avail) :- ship__order(O, Avail, New__avail).
+open__new__stack(Open, New__open) :- count(Open), count(New__open), stacks__avail(Open), next__count(Open, New__open).
+stacks__avail(New__open) :- open__new__stack(Open, New__open).
+solvable() :- shipped(o1), shipped(o2), shipped(o3), shipped(o4), shipped(o5), shipped(o6), shipped(o7), shipped(o8), shipped(o9), shipped(o10), shipped(o11), shipped(o12), shipped(o13), shipped(o14), shipped(o15), shipped(o16), shipped(o17), shipped(o18), shipped(o19), shipped(o20).

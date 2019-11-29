@@ -1,0 +1,20 @@
+domain, problem, status, time_taken, memory_usage, log_file
+psr-large , p01-s29-n2-l5-f30.pddl , failure , 0.057884931564331055 , 37.664 , ./stderr_dir/psr-large_stderr.log
+blocks-3op , pfile1.pddl , failure , 0.028467655181884766 , 36.316 , ./stderr_dir/blocks-3op_stderr.log
+philosophers , p01-phil2.pddl , failure , 0.10125279426574707 , 38.544 , ./stderr_dir/philosophers_stderr.log
+settlers , p01_pfile1.pddl , failure , 0.17387175559997559 , 39.308 , ./stderr_dir/settlers_stderr.log
+tidybot-opt11-strips , p01.pddl , failure , 0.2476820945739746 , 41.344 , ./stderr_dir/tidybot-opt11-strips_stderr.log
+tidybot-sat11-strips , p01.pddl , failure , 0.26006627082824707 , 41.592 , ./stderr_dir/tidybot-sat11-strips_stderr.log
+cybersec , p01.pddl , failure , 160.43708896636963 , 2911.708 , ./stderr_dir/cybersec_stderr.log
+petri-net-alignment-opt18 , p01.pddl , failure , 1.184147596359253 , 61.74 , ./stderr_dir/petri-net-alignment-opt18_stderr.log
+airport-adl , p01-airport1-p1.pddl , failure , 0.14679837226867676 , 38.304 , ./stderr_dir/airport-adl_stderr.log
+assembly , prob01.pddl , failure , 0.11511659622192383 , 37.996 , ./stderr_dir/assembly_stderr.log
+psr-middle , p01-s17-n2-l2-f30.pddl , failure , 0.05874347686767578 , 37.82 , ./stderr_dir/psr-middle_stderr.log
+movie , prob01.pddl , failure , 0.0521397590637207 , 36.72 , ./stderr_dir/movie_stderr.log
+floortile-opt11-strips , opt-p01-001.pddl , failure , 0.062255144119262695 , 37.488 , ./stderr_dir/floortile-opt11-strips_stderr.log
+storage , p01.pddl , failure , 0.05734395980834961 , 37.384 , ./stderr_dir/storage_stderr.log
+tyreworld , pfile1.pddl , failure , 0.056915998458862305 , 37.324 , ./stderr_dir/tyreworld_stderr.log
+elevators-00-full , f1-0.pddl , failure , 0.08333730697631836 , 37.456 , ./stderr_dir/elevators-00-full_stderr.log
+optical-telegraphs , p01-opt2.pddl , failure , 0.10980701446533203 , 38.46 , ./stderr_dir/optical-telegraphs_stderr.log
+fridge , p-5fridges-5screws.pddl , failure , 0.013990640640258789 , 36.576 , ./stderr_dir/fridge_stderr.log
+miconic-fulladl , f1-0.pddl , failure , 0.09434652328491211 , 37.34 , ./stderr_dir/miconic-fulladl_stderr.log
