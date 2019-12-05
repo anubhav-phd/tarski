@@ -1,5 +1,5 @@
 (define (domain settlers)
-(:requirements :action-costs :typing :negative-preconditions :conditional-effects)
+(:requirements :typing :negative-preconditions :conditional-effects)
 (:types
     store stone_level ore_level timber_level coal_level wood_level iron_level resource space_level housing_level - object
     place vehicle - store
@@ -27,10 +27,10 @@
     il0 il3 il5 il6 il7 il8 il9 il10 - iron_level
 )
 (:predicates
-    (connected-by-land ?p1 - place ?p2 - place)
+    (CONNECTED-BY-LAND ?p1 - place ?p2 - place)
     (connected-by-rail ?p1 - place ?p2 - place)
-    (connected-by-sea ?p1 - place ?p2 - place)
-    (by-coast ?p - place)
+    (CONNECTED-BY-SEA ?p1 - place ?p2 - place)
+    (BY-COAST ?p - place)
     (has-coal-stack ?p - place)
     (has-sawmill ?p - place)
     (has-ironworks ?p - place)
@@ -49,14 +49,14 @@
     (available-wood ?s - store ?l - wood_level)
     (available-iron ?s - store ?l - iron_level)
     (housing ?p - place ?l - housing_level)
-    (diff-stone ?l1 ?l2 ?l3 - stone_level)
-    (diff-ore ?l1 ?l2 ?l3 - ore_level)
-    (diff-timber ?l1 ?l2 ?l3 - timber_level)
-    (diff-coal ?l1 ?l2 ?l3 - coal_level)
-    (diff-wood ?l1 ?l2 ?l3 - wood_level)
-    (diff-iron ?l1 ?l2 ?l3 - iron_level)
-    (diff-space ?l1 ?l2 ?l3 - space_level)
-    (diff-housing ?l1 ?l2 ?l3 - housing_level)
+    (DIFF-STONE ?l1 ?l2 ?l3 - stone_level)
+    (DIFF-ORE ?l1 ?l2 ?l3 - ore_level)
+    (DIFF-TIMBER ?l1 ?l2 ?l3 - timber_level)
+    (DIFF-COAL ?l1 ?l2 ?l3 - coal_level)
+    (DIFF-WOOD ?l1 ?l2 ?l3 - wood_level)
+    (DIFF-IRON ?l1 ?l2 ?l3 - iron_level)
+    (DIFF-SPACE ?l1 ?l2 ?l3 - space_level)
+    (DIFF-HOUSING ?l1 ?l2 ?l3 - housing_level)
     (available-atleast-stone ?s - store ?l - stone_level)
     (available-atleast-ore ?s - store ?l - ore_level)
     (available-atleast-timber ?s - store ?l - timber_level)
@@ -65,24 +65,24 @@
     (available-atleast-iron ?s - store ?l - iron_level)
     (has-space ?v - vehicle)
     ; ?r_old < ?al <= ?rold + ?r_added
-    (add-atleast-stone ?r_old - stone_level ?r_added - stone_atleastlevel ?al - stone_atleastlevel)
-    (add-atleast-ore ?r_old - ore_level ?r_added - ore_atleastlevel ?al - ore_atleastlevel)
-    (add-atleast-timber ?r_old - timber_level ?r_added - timber_atleastlevel ?al - timber_atleastlevel)
-    (add-atleast-coal ?r_old - coal_level ?r_added - coal_atleastlevel ?al - coal_atleastlevel)
-    (add-atleast-wood ?r_old - wood_level ?r_added - wood_atleastlevel ?al - wood_atleastlevel)
-    (add-atleast-iron ?r_old - iron_level ?r_added - iron_atleastlevel ?al - iron_atleastlevel)
+    (ADD-ATLEAST-STONE ?r_old - stone_level ?r_added - stone_atleastlevel ?al - stone_atleastlevel)
+    (ADD-ATLEAST-ORE ?r_old - ore_level ?r_added - ore_atleastlevel ?al - ore_atleastlevel)
+    (ADD-ATLEAST-TIMBER ?r_old - timber_level ?r_added - timber_atleastlevel ?al - timber_atleastlevel)
+    (ADD-ATLEAST-COAL ?r_old - coal_level ?r_added - coal_atleastlevel ?al - coal_atleastlevel)
+    (ADD-ATLEAST-WOOD ?r_old - wood_level ?r_added - wood_atleastlevel ?al - wood_atleastlevel)
+    (ADD-ATLEAST-IRON ?r_old - iron_level ?r_added - iron_atleastlevel ?al - iron_atleastlevel)
     ; ?r_old - r_consumed < ?al <= ?rold
-    (del-atleast-stone ?r_old - stone_level ?r_consumed - stone_atleastlevel ?al - stone_atleastlevel)
-    (del-atleast-ore ?r_old - ore_level ?r_consumed - ore_atleastlevel ?al - ore_atleastlevel)
-    (del-atleast-timber ?r_old - timber_level ?r_consumed - timber_atleastlevel ?al - timber_atleastlevel)
-    (del-atleast-coal ?r_old - coal_level ?r_consumed - coal_atleastlevel ?al - coal_atleastlevel)
-    (del-atleast-wood ?r_old - wood_level ?r_consumed - wood_atleastlevel ?al - wood_atleastlevel)
-    (del-atleast-iron ?r_old - iron_level ?r_consumed - iron_atleastlevel ?al - iron_atleastlevel)
+    (DEL-ATLEAST-STONE ?r_old - stone_level ?r_consumed - stone_atleastlevel ?al - stone_atleastlevel)
+    (DEL-ATLEAST-ORE ?r_old - ore_level ?r_consumed - ore_atleastlevel ?al - ore_atleastlevel)
+    (DEL-ATLEAST-TIMBER ?r_old - timber_level ?r_consumed - timber_atleastlevel ?al - timber_atleastlevel)
+    (DEL-ATLEAST-COAL ?r_old - coal_level ?r_consumed - coal_atleastlevel ?al - coal_atleastlevel)
+    (DEL-ATLEAST-WOOD ?r_old - wood_level ?r_consumed - wood_atleastlevel ?al - wood_atleastlevel)
+    (DEL-ATLEAST-IRON ?r_old - iron_level ?r_consumed - iron_atleastlevel ?al - iron_atleastlevel)
 )
 (:functions
     (total-cost) - number
 )
-;; a.1: loading and unloading.
+;; A.1: Loading and unloading.
 ; resource[place] -= 1, resource[vehicle] += 1, space[vehicle] -= 1\
 (:action load-stone
     :parameters (?v - vehicle ?p - place)
@@ -98,7 +98,7 @@
             (when
                 (and
                     (available-stone ?p ?rpold)
-                    (diff-stone ?rpold sl1 ?rpnew)
+                    (DIFF-STONE ?rpold sl1 ?rpnew)
                 )
                 (and
                     (available-stone ?p ?rpnew)
@@ -110,7 +110,7 @@
             (when
                 (and
                     (available-stone ?p ?rpold)
-                    (del-atleast-stone ?rpold sl1 ?al)
+                    (DEL-ATLEAST-STONE ?rpold sl1 ?al)
                 )
                 (not (available-atleast-stone ?p ?al))
             )
@@ -119,7 +119,7 @@
             (when
                 (and
                     (available-stone ?v ?rvold)
-                    (diff-stone ?rvnew sl1 ?rvold)
+                    (DIFF-STONE ?rvnew sl1 ?rvold)
                 )
                 (and
                     (not (available-stone ?v ?rvold))
@@ -131,7 +131,7 @@
             (when
                 (and
                     (available-stone ?v ?rvold)
-                    (add-atleast-stone ?rvold sl1 ?al)
+                    (ADD-ATLEAST-STONE ?rvold sl1 ?al)
                 )
                 (available-atleast-stone ?v ?al)
             )
@@ -140,7 +140,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -175,7 +175,7 @@
             (when
                 (and
                     (available-ore ?p ?rpold)
-                    (diff-ore ?rpold ol1 ?rpnew)
+                    (DIFF-ORE ?rpold ol1 ?rpnew)
                 )
                 (and
                     (available-ore ?p ?rpnew)
@@ -187,7 +187,7 @@
             (when
                 (and
                     (available-ore ?p ?rpold)
-                    (del-atleast-ore ?rpold ol1 ?al)
+                    (DEL-ATLEAST-ORE ?rpold ol1 ?al)
                 )
                 (not (available-atleast-ore ?p ?al))
             )
@@ -196,7 +196,7 @@
             (when
                 (and
                     (available-ore ?v ?rvold)
-                    (diff-ore ?rvnew ol1 ?rvold)
+                    (DIFF-ORE ?rvnew ol1 ?rvold)
                 )
                 (and
                     (not (available-ore ?v ?rvold))
@@ -208,7 +208,7 @@
             (when
                 (and
                     (available-ore ?v ?rvold)
-                    (add-atleast-ore ?rvold ol1 ?al)
+                    (ADD-ATLEAST-ORE ?rvold ol1 ?al)
                 )
                 (available-atleast-ore ?v ?al)
             )
@@ -217,7 +217,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -252,7 +252,7 @@
             (when
                 (and
                     (available-timber ?p ?rpold)
-                    (diff-timber ?rpold tl1 ?rpnew)
+                    (DIFF-TIMBER ?rpold tl1 ?rpnew)
                 )
                 (and
                     (available-timber ?p ?rpnew)
@@ -264,7 +264,7 @@
             (when
                 (and
                     (available-timber ?p ?rpold)
-                    (del-atleast-timber ?rpold tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?rpold tl1 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -273,7 +273,7 @@
             (when
                 (and
                     (available-timber ?v ?rvold)
-                    (diff-timber ?rvnew tl1 ?rvold)
+                    (DIFF-TIMBER ?rvnew tl1 ?rvold)
                 )
                 (and
                     (not (available-timber ?v ?rvold))
@@ -285,7 +285,7 @@
             (when
                 (and
                     (available-timber ?v ?rvold)
-                    (add-atleast-timber ?rvold tl1 ?al)
+                    (ADD-ATLEAST-TIMBER ?rvold tl1 ?al)
                 )
                 (available-atleast-timber ?v ?al)
             )
@@ -294,7 +294,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -329,7 +329,7 @@
             (when
                 (and
                     (available-wood ?p ?rpold)
-                    (diff-wood ?rpold wl1 ?rpnew)
+                    (DIFF-WOOD ?rpold wl1 ?rpnew)
                 )
                 (and
                     (available-wood ?p ?rpnew)
@@ -341,7 +341,7 @@
             (when
                 (and
                     (available-wood ?p ?rpold)
-                    (del-atleast-wood ?rpold wl1 ?al)
+                    (DEL-ATLEAST-WOOD ?rpold wl1 ?al)
                 )
                 (not (available-atleast-wood ?p ?al))
             )
@@ -350,7 +350,7 @@
             (when
                 (and
                     (available-wood ?v ?rvold)
-                    (diff-wood ?rvnew wl1 ?rvold)
+                    (DIFF-WOOD ?rvnew wl1 ?rvold)
                 )
                 (and
                     (not (available-wood ?v ?rvold))
@@ -362,7 +362,7 @@
             (when
                 (and
                     (available-wood ?v ?rvold)
-                    (add-atleast-wood ?rvold wl1 ?al)
+                    (ADD-ATLEAST-WOOD ?rvold wl1 ?al)
                 )
                 (available-atleast-wood ?v ?al)
             )
@@ -371,7 +371,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -406,7 +406,7 @@
             (when
                 (and
                     (available-coal ?p ?rpold)
-                    (diff-coal ?rpold cl1 ?rpnew)
+                    (DIFF-COAL ?rpold cl1 ?rpnew)
                 )
                 (and
                     (available-coal ?p ?rpnew)
@@ -418,7 +418,7 @@
             (when
                 (and
                     (available-coal ?p ?rpold)
-                    (del-atleast-coal ?rpold cl1 ?al)
+                    (DEL-ATLEAST-COAL ?rpold cl1 ?al)
                 )
                 (not (available-atleast-coal ?p ?al))
             )
@@ -427,7 +427,7 @@
             (when
                 (and
                     (available-coal ?v ?rvold)
-                    (diff-coal ?rvnew cl1 ?rvold)
+                    (DIFF-COAL ?rvnew cl1 ?rvold)
                 )
                 (and
                     (not (available-coal ?v ?rvold))
@@ -439,7 +439,7 @@
             (when
                 (and
                     (available-coal ?v ?rvold)
-                    (add-atleast-coal ?rvold cl1 ?al)
+                    (ADD-ATLEAST-COAL ?rvold cl1 ?al)
                 )
                 (available-atleast-coal ?v ?al)
             )
@@ -448,7 +448,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -483,7 +483,7 @@
             (when
                 (and
                     (available-iron ?p ?rpold)
-                    (diff-iron ?rpold il1 ?rpnew)
+                    (DIFF-IRON ?rpold il1 ?rpnew)
                 )
                 (and
                     (available-iron ?p ?rpnew)
@@ -495,7 +495,7 @@
             (when
                 (and
                     (available-iron ?p ?rpold)
-                    (del-atleast-iron ?rpold il1 ?al)
+                    (DEL-ATLEAST-IRON ?rpold il1 ?al)
                 )
                 (not (available-atleast-iron ?p ?al))
             )
@@ -504,7 +504,7 @@
             (when
                 (and
                     (available-iron ?v ?rvold)
-                    (diff-iron ?rvnew il1 ?rvold)
+                    (DIFF-IRON ?rvnew il1 ?rvold)
                 )
                 (and
                     (not (available-iron ?v ?rvold))
@@ -516,7 +516,7 @@
             (when
                 (and
                     (available-iron ?v ?rvold)
-                    (add-atleast-iron ?rvold il1 ?al)
+                    (ADD-ATLEAST-IRON ?rvold il1 ?al)
                 )
                 (available-atleast-iron ?v ?al)
             )
@@ -525,7 +525,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?sold spl1 ?snew)
+                    (DIFF-SPACE ?sold spl1 ?snew)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -560,7 +560,7 @@
             (when
                 (and
                     (available-stone ?p ?rpold)
-                    (diff-stone ?rpnew sl1 ?rpold)
+                    (DIFF-STONE ?rpnew sl1 ?rpold)
                 )
                 (and
                     (not (available-stone ?p ?rpold))
@@ -572,7 +572,7 @@
             (when
                 (and
                     (available-stone ?p ?rpold)
-                    (add-atleast-stone ?rpold sl1 ?al)
+                    (ADD-ATLEAST-STONE ?rpold sl1 ?al)
                 )
                 (available-atleast-stone ?p ?al)
             )
@@ -581,7 +581,7 @@
             (when
                 (and
                     (available-stone ?v ?rvold)
-                    (diff-stone ?rvold sl1 ?rvnew)
+                    (DIFF-STONE ?rvold sl1 ?rvnew)
                 )
                 (and
                     (not (available-stone ?v ?rvold))
@@ -593,7 +593,7 @@
             (when
                 (and
                     (available-stone ?v ?rvold)
-                    (del-atleast-stone ?rvold sl1 ?al)
+                    (DEL-ATLEAST-STONE ?rvold sl1 ?al)
                 )
                 (not (available-atleast-stone ?v ?al))
             )
@@ -602,7 +602,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -628,7 +628,7 @@
             (when
                 (and
                     (available-ore ?p ?rpold)
-                    (diff-ore ?rpnew ol1 ?rpold)
+                    (DIFF-ORE ?rpnew ol1 ?rpold)
                 )
                 (and
                     (not (available-ore ?p ?rpold))
@@ -640,7 +640,7 @@
             (when
                 (and
                     (available-ore ?p ?rpold)
-                    (add-atleast-ore ?rpold ol1 ?al)
+                    (ADD-ATLEAST-ORE ?rpold ol1 ?al)
                 )
                 (available-atleast-ore ?p ?al)
             )
@@ -649,7 +649,7 @@
             (when
                 (and
                     (available-ore ?v ?rvold)
-                    (diff-ore ?rvold ol1 ?rvnew)
+                    (DIFF-ORE ?rvold ol1 ?rvnew)
                 )
                 (and
                     (not (available-ore ?v ?rvold))
@@ -661,7 +661,7 @@
             (when
                 (and
                     (available-ore ?v ?rvold)
-                    (del-atleast-ore ?rvold ol1 ?al)
+                    (DEL-ATLEAST-ORE ?rvold ol1 ?al)
                 )
                 (not (available-atleast-ore ?v ?al))
             )
@@ -670,7 +670,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -696,7 +696,7 @@
             (when
                 (and
                     (available-timber ?p ?rpold)
-                    (diff-timber ?rpnew tl1 ?rpold)
+                    (DIFF-TIMBER ?rpnew tl1 ?rpold)
                 )
                 (and
                     (not (available-timber ?p ?rpold))
@@ -708,7 +708,7 @@
             (when
                 (and
                     (available-timber ?p ?rpold)
-                    (add-atleast-timber ?rpold tl1 ?al)
+                    (ADD-ATLEAST-TIMBER ?rpold tl1 ?al)
                 )
                 (available-atleast-timber ?p ?al)
             )
@@ -717,7 +717,7 @@
             (when
                 (and
                     (available-timber ?v ?rvold)
-                    (diff-timber ?rvold tl1 ?rvnew)
+                    (DIFF-TIMBER ?rvold tl1 ?rvnew)
                 )
                 (and
                     (not (available-timber ?v ?rvold))
@@ -729,7 +729,7 @@
             (when
                 (and
                     (available-timber ?v ?rvold)
-                    (del-atleast-timber ?rvold tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?rvold tl1 ?al)
                 )
                 (not (available-atleast-timber ?v ?al))
             )
@@ -738,7 +738,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -764,7 +764,7 @@
             (when
                 (and
                     (available-wood ?p ?rpold)
-                    (diff-wood ?rpnew wl1 ?rpold)
+                    (DIFF-WOOD ?rpnew wl1 ?rpold)
                 )
                 (and
                     (not (available-wood ?p ?rpold))
@@ -776,7 +776,7 @@
             (when
                 (and
                     (available-wood ?p ?rpold)
-                    (add-atleast-wood ?rpold wl1 ?al)
+                    (ADD-ATLEAST-WOOD ?rpold wl1 ?al)
                 )
                 (available-atleast-wood ?p ?al)
             )
@@ -785,7 +785,7 @@
             (when
                 (and
                     (available-wood ?v ?rvold)
-                    (diff-wood ?rvold wl1 ?rvnew)
+                    (DIFF-WOOD ?rvold wl1 ?rvnew)
                 )
                 (and
                     (not (available-wood ?v ?rvold))
@@ -797,7 +797,7 @@
             (when
                 (and
                     (available-wood ?v ?rvold)
-                    (del-atleast-wood ?rvold wl1 ?al)
+                    (DEL-ATLEAST-WOOD ?rvold wl1 ?al)
                 )
                 (not (available-atleast-wood ?v ?al))
             )
@@ -806,7 +806,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -832,7 +832,7 @@
             (when
                 (and
                     (available-coal ?p ?rpold)
-                    (diff-coal ?rpnew cl1 ?rpold)
+                    (DIFF-COAL ?rpnew cl1 ?rpold)
                 )
                 (and
                     (not (available-coal ?p ?rpold))
@@ -844,7 +844,7 @@
             (when
                 (and
                     (available-coal ?p ?rpold)
-                    (add-atleast-coal ?rpold cl1 ?al)
+                    (ADD-ATLEAST-COAL ?rpold cl1 ?al)
                 )
                 (available-atleast-coal ?p ?al)
             )
@@ -853,7 +853,7 @@
             (when
                 (and
                     (available-coal ?v ?rvold)
-                    (diff-coal ?rvold cl1 ?rvnew)
+                    (DIFF-COAL ?rvold cl1 ?rvnew)
                 )
                 (and
                     (not (available-coal ?v ?rvold))
@@ -865,7 +865,7 @@
             (when
                 (and
                     (available-coal ?v ?rvold)
-                    (del-atleast-coal ?rvold cl1 ?al)
+                    (DEL-ATLEAST-COAL ?rvold cl1 ?al)
                 )
                 (not (available-atleast-coal ?v ?al))
             )
@@ -874,7 +874,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -900,7 +900,7 @@
             (when
                 (and
                     (available-iron ?p ?rpold)
-                    (diff-iron ?rpnew il1 ?rpold)
+                    (DIFF-IRON ?rpnew il1 ?rpold)
                 )
                 (and
                     (not (available-iron ?p ?rpold))
@@ -912,7 +912,7 @@
             (when
                 (and
                     (available-iron ?p ?rpold)
-                    (add-atleast-iron ?rpold il1 ?al)
+                    (ADD-ATLEAST-IRON ?rpold il1 ?al)
                 )
                 (available-atleast-iron ?p ?al)
             )
@@ -921,7 +921,7 @@
             (when
                 (and
                     (available-iron ?v ?rvold)
-                    (diff-iron ?rvold il1 ?rvnew)
+                    (DIFF-IRON ?rvold il1 ?rvnew)
                 )
                 (and
                     (not (available-iron ?v ?rvold))
@@ -933,7 +933,7 @@
             (when
                 (and
                     (available-iron ?v ?rvold)
-                    (del-atleast-iron ?rvold il1 ?al)
+                    (DEL-ATLEAST-IRON ?rvold il1 ?al)
                 )
                 (not (available-atleast-iron ?v ?al))
             )
@@ -942,7 +942,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -955,15 +955,15 @@
     )
 )
 
-;; a.2: moving vehicles.
-;; moving trains and ships consumes coal, which has to be
+;; A.2: Moving vehicles.
+;; Moving trains and ships consumes coal, which has to be
 ;; loaded in the vehicle.
 (:action move-cart
     :parameters (?v - vehicle ?p1 ?p2 - place)
     :precondition
     (and
         (is-cart ?v)
-        (connected-by-land ?p1 ?p2)
+        (CONNECTED-BY-LAND ?p1 ?p2)
         (is-at ?v ?p1)
     )
     :effect
@@ -993,7 +993,7 @@
             (when
                 (and
                     (available-coal ?v ?cold)
-                    (diff-coal ?cold cl1 ?cnew)
+                    (DIFF-COAL ?cold cl1 ?cnew)
                 )
                 (and
                     (not (available-coal ?v ?cold))
@@ -1005,7 +1005,7 @@
             (when
                 (and
                     (available-coal ?v ?cold)
-                    (del-atleast-coal ?cold cl1 ?al)
+                    (DEL-ATLEAST-COAL ?cold cl1 ?al)
                 )
                 (not (available-atleast-coal ?v ?al))
             )
@@ -1014,7 +1014,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl1 ?sold)
+                    (DIFF-SPACE ?snew spl1 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -1034,7 +1034,7 @@
     :precondition
     (and
         (is-ship ?v)
-        (connected-by-sea ?p1 ?p2)
+        (CONNECTED-BY-SEA ?p1 ?p2)
         (is-at ?v ?p1)
         (available-atleast-coal ?v cl2)
     )
@@ -1046,7 +1046,7 @@
             (when
                 (and
                     (available-coal ?v ?cold)
-                    (diff-coal ?cold cl2 ?cnew)
+                    (DIFF-COAL ?cold cl2 ?cnew)
                 )
                 (and
                     (not (available-coal ?v ?cold))
@@ -1058,7 +1058,7 @@
             (when
                 (and
                     (available-coal ?v ?cold)
-                    (del-atleast-coal ?cold cl2 ?al)
+                    (DEL-ATLEAST-COAL ?cold cl2 ?al)
                 )
                 (not (available-atleast-coal ?v ?al))
             )
@@ -1067,7 +1067,7 @@
             (when
                 (and
                     (space-in ?v ?sold)
-                    (diff-space ?snew spl2 ?sold)
+                    (DIFF-SPACE ?snew spl2 ?sold)
                 )
                 (and
                     (not (space-in ?v ?sold))
@@ -1080,7 +1080,7 @@
     )
 )
 
-;; b.1: building structures.
+;; B.1: Building structures.
 ; timber [place] -= 1
 (:action build-coal-stack
     :parameters (?p - place)
@@ -1096,7 +1096,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (diff-timber ?told tl1 ?tnew)
+                    (DIFF-TIMBER ?told tl1 ?tnew)
                 )
                 (and
                     (not (available-timber ?p ?told))
@@ -1108,7 +1108,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (del-atleast-timber ?told tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?told tl1 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -1132,7 +1132,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (diff-timber ?told tl2 ?tnew)
+                    (DIFF-TIMBER ?told tl2 ?tnew)
                 )
                 (and
                     (not (available-timber ?p ?told))
@@ -1144,7 +1144,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (del-atleast-timber ?told tl2 ?al)
+                    (DEL-ATLEAST-TIMBER ?told tl2 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -1170,7 +1170,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (diff-stone ?sold sl2 ?snew)
+                    (DIFF-STONE ?sold sl2 ?snew)
                 )
                 (and
                     (not (available-stone ?p ?sold))
@@ -1182,7 +1182,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (del-atleast-stone ?sold sl2 ?al)
+                    (DEL-ATLEAST-STONE ?sold sl2 ?al)
                 )
                 (not (available-atleast-stone ?p ?al))
             )
@@ -1191,7 +1191,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (diff-wood ?wold wl2 ?wnew)
+                    (DIFF-WOOD ?wold wl2 ?wnew)
                 )
                 (and
                     (not (available-wood ?p ?wold))
@@ -1203,7 +1203,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (del-atleast-wood ?wold wl2 ?al)
+                    (DEL-ATLEAST-WOOD ?wold wl2 ?al)
                 )
                 (not (available-atleast-wood ?p ?al))
             )
@@ -1218,7 +1218,7 @@
     :parameters (?p - place)
     :precondition
     (and
-        (by-coast ?p)
+        (BY-COAST ?p)
         (not (has-docks ?p))
         (available-atleast-wood ?p wl2)
         (available-atleast-stone ?p sl2)
@@ -1230,7 +1230,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (diff-wood ?wold wl2 ?wnew)
+                    (DIFF-WOOD ?wold wl2 ?wnew)
                 )
                 (and
                     (not (available-wood ?p ?wold))
@@ -1242,7 +1242,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (del-atleast-wood ?wold wl2 ?al)
+                    (DEL-ATLEAST-WOOD ?wold wl2 ?al)
                 )
                 (not (available-atleast-wood ?p ?al))
             )
@@ -1251,7 +1251,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (diff-stone ?sold sl2 ?snew)
+                    (DIFF-STONE ?sold sl2 ?snew)
                 )
                 (and
                     (not (available-stone ?p ?sold))
@@ -1263,7 +1263,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (del-atleast-stone ?sold sl2 ?al)
+                    (DEL-ATLEAST-STONE ?sold sl2 ?al)
                 )
                 (not (available-atleast-stone ?p ?al))
             )
@@ -1290,7 +1290,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (diff-iron ?iold il2 ?inew)
+                    (DIFF-IRON ?iold il2 ?inew)
                 )
                 (and
                     (not (available-iron ?p ?iold))
@@ -1302,7 +1302,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (del-atleast-iron ?iold il2 ?al)
+                    (DEL-ATLEAST-IRON ?iold il2 ?al)
                 )
                 (not (available-atleast-iron ?p ?al))
             )
@@ -1311,7 +1311,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (diff-stone ?sold sl2 ?snew)
+                    (DIFF-STONE ?sold sl2 ?snew)
                 )
                 (and
                     (not (available-stone ?p ?sold))
@@ -1323,7 +1323,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (del-atleast-stone ?sold sl2 ?al)
+                    (DEL-ATLEAST-STONE ?sold sl2 ?al)
                 )
                 (not (available-atleast-stone ?p ?al))
             )
@@ -1338,7 +1338,7 @@
     :parameters (?p1 ?p2 - place)
     :precondition
     (and
-        (connected-by-land ?p1 ?p2)
+        (CONNECTED-BY-LAND ?p1 ?p2)
         (not (connected-by-rail ?p1 ?p2))
         (available-atleast-iron ?p1 il1)
         (available-atleast-wood ?p1 wl1)
@@ -1350,7 +1350,7 @@
             (when
                 (and
                     (available-wood ?p1 ?wold)
-                    (diff-wood ?wold wl1 ?wnew)
+                    (DIFF-WOOD ?wold wl1 ?wnew)
                 )
                 (and
                     (not (available-wood ?p1 ?wold))
@@ -1362,7 +1362,7 @@
             (when
                 (and
                     (available-wood ?p1 ?wold)
-                    (del-atleast-wood ?wold wl1 ?al)
+                    (DEL-ATLEAST-WOOD ?wold wl1 ?al)
                 )
                 (not (available-atleast-wood ?p1 ?al))
             )
@@ -1371,7 +1371,7 @@
             (when
                 (and
                     (available-iron ?p1 ?iold)
-                    (diff-iron ?iold il1 ?inew)
+                    (DIFF-IRON ?iold il1 ?inew)
                 )
                 (and
                     (not (available-iron ?p1 ?iold))
@@ -1383,7 +1383,7 @@
             (when
                 (and
                     (available-iron ?p1 ?iold)
-                    (del-atleast-iron ?iold il1 ?al)
+                    (DEL-ATLEAST-IRON ?iold il1 ?al)
                 )
                 (not (available-atleast-iron ?p1 ?al))
             )
@@ -1408,7 +1408,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (diff-stone ?sold sl1 ?snew)
+                    (DIFF-STONE ?sold sl1 ?snew)
                 )
                 (and
                     (not (available-stone ?p ?sold))
@@ -1420,7 +1420,7 @@
             (when
                 (and
                     (available-stone ?p ?sold)
-                    (del-atleast-stone ?sold sl1 ?al)
+                    (DEL-ATLEAST-STONE ?sold sl1 ?al)
                 )
                 (not (available-atleast-stone ?p ?al))
             )
@@ -1429,7 +1429,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (diff-wood ?wold wl1 ?wnew)
+                    (DIFF-WOOD ?wold wl1 ?wnew)
                 )
                 (and
                     (not (available-wood ?p ?wold))
@@ -1441,7 +1441,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (del-atleast-wood ?wold wl1 ?al)
+                    (DEL-ATLEAST-WOOD ?wold wl1 ?al)
                 )
                 (not (available-atleast-wood ?p ?al))
             )
@@ -1450,7 +1450,7 @@
             (when
                 (and
                     (housing ?p ?hold)
-                    (diff-housing ?hnew hl1 ?hold)
+                    (DIFF-HOUSING ?hnew hl1 ?hold)
                 )
                 (and
                     (not (housing ?p ?hold))
@@ -1461,7 +1461,7 @@
     )
 )
 
-;; b.2: building vehicles.
+;; B.2: Building vehicles.
 ; timber [place] -= 1
 (:action build-cart
     :parameters (?p - place ?v - vehicle)
@@ -1476,7 +1476,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (diff-timber ?told tl1 ?tnew)
+                    (DIFF-TIMBER ?told tl1 ?tnew)
                 )
                 (and
                     (not (available-timber ?p ?told))
@@ -1488,7 +1488,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (del-atleast-timber ?told tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?told tl1 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -1516,7 +1516,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (diff-iron ?iold il2 ?inew)
+                    (DIFF-IRON ?iold il2 ?inew)
                 )
                 (and
                     (not (available-iron ?p ?iold))
@@ -1528,7 +1528,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (del-atleast-iron ?iold il2 ?al)
+                    (DEL-ATLEAST-IRON ?iold il2 ?al)
                 )
                 (not (available-atleast-iron ?p ?al))
             )
@@ -1557,7 +1557,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (diff-iron ?iold il4 ?inew)
+                    (DIFF-IRON ?iold il4 ?inew)
                 )
                 (and
                     (not (available-iron ?p ?iold))
@@ -1569,7 +1569,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (del-atleast-iron ?iold il4 ?al)
+                    (DEL-ATLEAST-IRON ?iold il4 ?al)
                 )
                 (not (available-atleast-iron ?p ?al))
             )
@@ -1583,7 +1583,7 @@
     )
 )
 
-;; c.1: refining resources.
+;; C.1: Refining resources.
 ; timber [place] -= 1
 ; coal [place] += 1
 (:action burn-coal
@@ -1599,7 +1599,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (diff-timber ?told tl1 ?tnew)
+                    (DIFF-TIMBER ?told tl1 ?tnew)
                 )
                 (and
                     (not (available-timber ?p ?told))
@@ -1611,7 +1611,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (del-atleast-timber ?told tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?told tl1 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -1620,7 +1620,7 @@
             (when
                 (and
                     (available-coal ?p ?cold)
-                    (diff-coal ?cnew cl1 ?cold)
+                    (DIFF-COAL ?cnew cl1 ?cold)
                 )
                 (and
                     (not (available-coal ?p ?cold))
@@ -1632,7 +1632,7 @@
             (when
                 (and
                     (available-coal ?p ?cold)
-                    (add-atleast-coal ?cold cl1 ?al)
+                    (ADD-ATLEAST-COAL ?cold cl1 ?al)
                 )
                 (available-atleast-coal ?p ?al)
             )
@@ -1656,7 +1656,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (diff-timber ?told tl1 ?tnew)
+                    (DIFF-TIMBER ?told tl1 ?tnew)
                 )
                 (and
                     (not (available-timber ?p ?told))
@@ -1668,7 +1668,7 @@
             (when
                 (and
                     (available-timber ?p ?told)
-                    (del-atleast-timber ?told tl1 ?al)
+                    (DEL-ATLEAST-TIMBER ?told tl1 ?al)
                 )
                 (not (available-atleast-timber ?p ?al))
             )
@@ -1677,7 +1677,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (diff-wood ?wnew wl1 ?wold)
+                    (DIFF-WOOD ?wnew wl1 ?wold)
                 )
                 (and
                     (not (available-wood ?p ?wold))
@@ -1689,7 +1689,7 @@
             (when
                 (and
                     (available-wood ?p ?wold)
-                    (add-atleast-wood ?wold wl1 ?al)
+                    (ADD-ATLEAST-WOOD ?wold wl1 ?al)
                 )
                 (available-atleast-wood ?p ?al)
             )
@@ -1714,7 +1714,7 @@
             (when
                 (and
                     (available-coal ?p ?cold)
-                    (diff-coal ?cold cl2 ?cnew)
+                    (DIFF-COAL ?cold cl2 ?cnew)
                 )
                 (and
                     (not (available-coal ?p ?cold))
@@ -1726,7 +1726,7 @@
             (when
                 (and
                     (available-coal ?p ?cold)
-                    (del-atleast-coal ?cold cl2 ?al)
+                    (DEL-ATLEAST-COAL ?cold cl2 ?al)
                 )
                 (not (available-atleast-coal ?p ?al))
             )
@@ -1735,7 +1735,7 @@
             (when
                 (and
                     (available-ore ?p ?oold)
-                    (diff-ore ?oold ol1 ?onew)
+                    (DIFF-ORE ?oold ol1 ?onew)
                 )
                 (and
                     (not (available-ore ?p ?oold))
@@ -1747,7 +1747,7 @@
             (when
                 (and
                     (available-ore ?p ?oold)
-                    (del-atleast-ore ?oold ol1 ?al)
+                    (DEL-ATLEAST-ORE ?oold ol1 ?al)
                 )
                 (not (available-atleast-ore ?p ?al))
             )
@@ -1756,7 +1756,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (diff-iron ?inew il1 ?iold)
+                    (DIFF-IRON ?inew il1 ?iold)
                 )
                 (and
                     (not (available-iron ?p ?iold))
@@ -1768,7 +1768,7 @@
             (when
                 (and
                     (available-iron ?p ?iold)
-                    (add-atleast-iron ?iold il1 ?al)
+                    (ADD-ATLEAST-IRON ?iold il1 ?al)
                 )
                 (available-atleast-iron ?p ?al)
             )

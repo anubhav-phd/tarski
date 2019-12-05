@@ -23,7 +23,7 @@
            :parameters ()
 	   :precondition (counter-at-other-than-two-hours)
            :effect (and (movie-rewound)
-                        ;; let's assume that the movie is 2 hours long
+                        ;; Let's assume that the movie is 2 hours long
                         (not (counter-at-zero))))
 
   (:action reset-counter
@@ -32,7 +32,7 @@
            :effect (counter-at-zero))
 
 
-  ;;; get the food and snacks for the movie
+  ;;; Get the food and snacks for the movie
   (:action get-chips
 
            :parameters (?x)

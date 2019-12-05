@@ -1,7 +1,7 @@
-;;simulation of a simplified single player version of 'agricola' board game
+;;Simulation of a simplified single player version of 'Agricola' board game
 ;;
-;;author: tomas de la rosa
-;;        universidad carlos iii of madrid (2017)
+;;Author: Tomas de la Rosa
+;;        Universidad Carlos III of Madrid (2017)
 ;;
 (define (domain agricola)
 (:requirements :typing :action-costs :negative-preconditions)
@@ -26,16 +26,16 @@
     backhome renew roundend - roundparts
 )
 (:predicates
-    (next_stage ?s1 ?s2 - stage)
+    (NEXT_STAGE ?s1 ?s2 - stage)
     (current_stage ?s - stage)
     (harvest_phase ?s - stage ?hclass - phaseclass)
-    (next_round ?r1 ?r2 - round)
+    (NEXT_ROUND ?r1 ?r2 - round)
     (hold_round ?r - round ?p - roundparts)
     (current_round ?r - round)
-    (category_round ?r - round ?t - roundclass)
-    ;; family members will be used in descending order
+    (CATEGORY_ROUND ?r - round ?t - roundclass)
+    ;; Family members will be used in descending order
     ;; the max is the number of member at present
-    (next_worker ?w1 ?w2 - worker)
+    (NEXT_WORKER ?w1 ?w2 - worker)
     (current_worker ?w - worker)
     (max_worker ?w - worker)
     (newborn)
@@ -46,16 +46,16 @@
     (fences_for ?a - animal)
     (owned_animals ?a - animal)
     (can_breed ?a - animal)
-    (next_num ?i1 ?i2 - num)
-    (next2_num ?i1 ?i2 - num)
-    (num_substract ?it - num ?iminus - num ?isol - num)
-    (food_required ?w - worker ?i - num)
+    (NEXT_NUM ?i1 ?i2 - num)
+    (NEXT2_NUM ?i1 ?i2 - num)
+    (NUM_SUBSTRACT ?it - num ?iminus - num ?isol - num)
+    (FOOD_REQUIRED ?w - worker ?i - num)
     (open_action ?a - actiontag)
     (available_action ?a - actiontag)
-    (drawcard_round ?a - actiontag ?r - round)
+    (DRAWCARD_ROUND ?a - actiontag ?r - round)
     (num_food ?i - num)
     (stored_resource ?r - resource)
-    (supply_resource ?s - buildtag ?r - resource)
+    (SUPPLY_RESOURCE ?s - buildtag ?r - resource)
     (space_rooms ?r - room)
     (built_rooms ?r - room ?w - worker)
     (ok)
@@ -71,7 +71,7 @@
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_init)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
     )
     :effect
     (and
@@ -87,11 +87,11 @@
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_init)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
         (sown_veg ?v)
         (num_food ?i1)
-        (next2_num ?i1 ?i2)
-        (next_num ?i2 ?i3)
+        (NEXT2_NUM ?i1 ?i2)
+        (NEXT_NUM ?i2 ?i3)
         (can_harvest ?v)
     )
     :effect
@@ -104,19 +104,19 @@
     )
 )
 
-;; this give an extra food is you have an oven
+;; This give an extra food is you have an oven
 (:action ag__harvest_collecting_fromoven
     :parameters (?r - round ?s - stage ?v - vegetable ?i1 ?i2 ?i3 - num)
     :precondition
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_init)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
         (home_improvement oven)
         (sown_veg ?v)
         (num_food ?i1)
-        (next2_num ?i1 ?i2)
-        (next2_num ?i2 ?i3)
+        (NEXT2_NUM ?i1 ?i2)
+        (NEXT2_NUM ?i2 ?i3)
         (can_harvest ?v)
     )
     :effect
@@ -135,11 +135,11 @@
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_feeding)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
         (max_worker ?wmax)
-        (food_required ?wmax ?ifeed)
+        (FOOD_REQUIRED ?wmax ?ifeed)
         (num_food ?inow)
-        (num_substract ?inow ?ifeed ?irest)
+        (NUM_SUBSTRACT ?inow ?ifeed ?irest)
     )
     :effect
     (and
@@ -160,10 +160,10 @@
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_breeding)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
         (owned_animals ?a)
         (num_food ?i)
-        (next2_num ?i ?i2)
+        (NEXT2_NUM ?i ?i2)
         (can_breed ?a)
     )
     :effect
@@ -181,7 +181,7 @@
     (and
         (hold_round ?r roundend)
         (harvest_phase ?s harvest_breeding)
-        (category_round ?r tharvest)
+        (CATEGORY_ROUND ?r tharvest)
     )
     :effect
     (and
@@ -217,7 +217,7 @@
         (current_round ?r)
         (current_worker noworker)
         (max_worker ?maxw)
-        (next_worker ?newmax ?maxw)
+        (NEXT_WORKER ?newmax ?maxw)
         (newborn)
     )
     :effect
@@ -267,10 +267,10 @@
     :parameters (?r1 ?r2 - round ?act - actiontag)
     :precondition
     (and
-        (category_round ?r1 tnormal)
+        (CATEGORY_ROUND ?r1 tnormal)
         (hold_round ?r1 roundend)
-        (next_round ?r1 ?r2)
-        (drawcard_round ?act ?r2)
+        (NEXT_ROUND ?r1 ?r2)
+        (DRAWCARD_ROUND ?act ?r2)
     )
     :effect
     (and
@@ -285,13 +285,13 @@
     :parameters (?s1 ?s2 - stage ?r1 ?r2 - round ?act - actiontag)
     :precondition
     (and
-        (category_round ?r1 tharvest)
+        (CATEGORY_ROUND ?r1 tharvest)
         (hold_round ?r1 roundend)
         (harvest_phase ?s1 harvest_end)
         (current_stage ?s1)
-        (next_stage ?s1 ?s2)
-        (next_round ?r1 ?r2)
-        (drawcard_round ?act ?r2)
+        (NEXT_STAGE ?s1 ?s2)
+        (NEXT_ROUND ?r1 ?r2)
+        (DRAWCARD_ROUND ?act ?r2)
     )
     :effect
     (and
@@ -306,7 +306,7 @@
 )
 
 ;; ================================
-;; player actions
+;; PLAYER ACTIONS
 ;; ================================
 (:action take_food
     :parameters (?w1 ?w2 ?wmax - worker ?r - round ?i1 ?i2 - num)
@@ -314,11 +314,11 @@
     (and
         (available_action act_labor)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (num_food ?i1)
-        (next_num ?i1 ?i2)
+        (NEXT_NUM ?i1 ?i2)
     )
     :effect
     (and
@@ -337,7 +337,7 @@
     (and
         (available_action act_plow)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (not (plowed_fields))
@@ -358,7 +358,7 @@
     (and
         (available_action act_grain)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
     )
@@ -379,7 +379,7 @@
         (available_action act_fences)
         (open_action act_fences)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
     )
@@ -393,7 +393,7 @@
     )
 )
 
-;; getting sheep, boar and cattle
+;; Getting sheep, boar and cattle
 (:action collect_animal
     :parameters (?a - animal ?act - animaltag ?w1 ?w2 ?wmax - worker ?r - round)
     :precondition
@@ -401,7 +401,7 @@
         (available_action ?act)
         (open_action ?act)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (fences_for ?a)
@@ -416,7 +416,7 @@
     )
 )
 
-;; getting sheep, boar and cattle
+;; Getting sheep, boar and cattle
 (:action collect_cook_animal
     :parameters (?a - animal ?act - animaltag ?w1 ?w2 ?wmax - worker ?r - round ?i1 ?i2 - num)
     :precondition
@@ -424,12 +424,12 @@
         (available_action ?act)
         (open_action ?act)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (home_improvement fireplace)
         (num_food ?i1)
-        (next2_num ?i1 ?i2)
+        (NEXT2_NUM ?i1 ?i2)
     )
     :effect
     (and
@@ -450,10 +450,10 @@
         (available_action ?act)
         (open_action ?act)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
-        (supply_resource ?act ?res)
+        (SUPPLY_RESOURCE ?act ?res)
     )
     :effect
     (and
@@ -472,9 +472,9 @@
         (available_action act_build)
         (open_action act_build)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
-        (next_worker ?wnewmax ?wmax)
+        (NEXT_WORKER ?wnewmax ?wmax)
         (current_round ?r)
         (stored_resource wood)
         (stored_resource reed)
@@ -500,7 +500,7 @@
         (available_action act_improve)
         (open_action act_improve)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (stored_resource clay)
@@ -525,9 +525,9 @@
         (available_action act_family)
         (open_action act_family)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
-        (next_worker ?wnewmax ?wmax)
+        (NEXT_WORKER ?wnewmax ?wmax)
         (built_rooms ?room ?wnewmax)
         (current_round ?r)
     )
@@ -548,7 +548,7 @@
         (available_action act_sow)
         (open_action act_sow)
         (current_worker ?w1)
-        (next_worker ?w1 ?w2)
+        (NEXT_WORKER ?w1 ?w2)
         (max_worker ?wmax)
         (current_round ?r)
         (plowed_fields)

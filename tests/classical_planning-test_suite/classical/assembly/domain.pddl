@@ -1,6 +1,6 @@
 (define (domain assembly)
    (:requirements :adl)
-   (:types assembly resource - object)   ; individual parts are atomic assemblies
+   (:types assembly resource - object)   ; Individual parts are atomic assemblies
    (:predicates (available ?x - object)
 		(complete ?a - assembly)
 		(requires ?a - assembly ?r - resource)
@@ -10,7 +10,7 @@
 		(to-be-removed ?part ?whole - assembly)
 		(assemble-order ?part1 ?part2 ?whole - assembly)
 		(transient-part ?part ?whole - assembly)
-		; after ?part1 is included, ?part2 must be removed
+		; After ?part1 is included, ?part2 must be removed
 		; for the ?whole to be complete:
 		(remove-order ?part1 ?part2 ?whole - assembly))
 
@@ -50,7 +50,7 @@
 			 (and (complete ?whole)
 			      (available ?whole)))))
 
-   ; you can remove the last part added, or a cleanup part at the
+   ; You can remove the last part added, or a cleanup part at the
    ; end.
    (:action remove
       :parameters (?part ?whole - assembly)

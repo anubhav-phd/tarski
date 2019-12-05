@@ -10,16 +10,16 @@
     (has-block)
     ;
     ; static predicates
-    (succ ?n1 - numb ?n2 - numb)
-    (neighbor ?p1 - position ?p2 - position)
-    (is-depot ?p - position)
+    (SUCC ?n1 - numb ?n2 - numb)
+    (NEIGHBOR ?p1 - position ?p2 - position)
+    (IS-DEPOT ?p - position)
 )
 (:action move
     :parameters (?from - position ?to - position ?h - numb)
     :precondition
     (and
         (at ?from)
-        (neighbor ?from ?to)
+        (NEIGHBOR ?from ?to)
         (height ?from ?h)
         (height ?to ?h)
     )
@@ -35,10 +35,10 @@
     :precondition
     (and
         (at ?from)
-        (neighbor ?from ?to)
+        (NEIGHBOR ?from ?to)
         (height ?from ?hfrom)
         (height ?to ?hto)
-        (succ ?hto ?hfrom)
+        (SUCC ?hto ?hfrom)
     )
     :effect
     (and
@@ -52,10 +52,10 @@
     :precondition
     (and
         (at ?from)
-        (neighbor ?from ?to)
+        (NEIGHBOR ?from ?to)
         (height ?from ?hfrom)
         (height ?to ?hto)
-        (succ ?hfrom ?hto)
+        (SUCC ?hfrom ?hto)
     )
     :effect
     (and
@@ -69,12 +69,12 @@
     :precondition
     (and
         (at ?rpos)
-        (neighbor ?rpos ?bpos)
+        (NEIGHBOR ?rpos ?bpos)
         (height ?rpos ?hbefore)
         (height ?bpos ?hbefore)
-        (succ ?hafter ?hbefore)
+        (SUCC ?hafter ?hbefore)
         (has-block)
-        (not (is-depot ?bpos))
+        (not (IS-DEPOT ?bpos))
     )
     :effect
     (and
@@ -89,10 +89,10 @@
     :precondition
     (and
         (at ?rpos)
-        (neighbor ?rpos ?bpos)
+        (NEIGHBOR ?rpos ?bpos)
         (height ?rpos ?hafter)
         (height ?bpos ?hbefore)
-        (succ ?hbefore ?hafter)
+        (SUCC ?hbefore ?hafter)
         (not (has-block))
     )
     :effect
@@ -109,7 +109,7 @@
     (and
         (at ?p)
         (not (has-block))
-        (is-depot ?p)
+        (IS-DEPOT ?p)
     )
     :effect
     (and
@@ -123,7 +123,7 @@
     (and
         (at ?p)
         (has-block)
-        (is-depot ?p)
+        (IS-DEPOT ?p)
     )
     :effect
     (and

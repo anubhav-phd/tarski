@@ -1,7 +1,7 @@
 
-;; this domain encodes the domain of a concurrent
+;; This domain encodes the domain of a concurrent
 ;; systems, especially communication protocols
-;; (c) stefan edelkamp, 2004
+;; (c) Stefan Edelkamp, 2004
 
 (define (domain protocol)
 

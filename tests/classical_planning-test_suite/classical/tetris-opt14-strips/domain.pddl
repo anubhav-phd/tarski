@@ -1,10 +1,9 @@
-; ipc8 domain: tetris
-; author: mauro vallati
+; IPC8 Domain: Tetris
+; Author: Mauro Vallati
 
 (define (domain tetris)
 (:requirements :typing :equality :negative-preconditions :action-costs)
   (:types  
-	pieces - object
 	one_square two_straight right_l - pieces
 	position 	
 	)
@@ -55,7 +54,7 @@
 		)
 )
 
-;; moving a piece "l" to the right
+;; moving a piece "L" to the right
 (:action move_l_right
   :parameters (?xy_initial1 ?xy_initial2 ?xy_initial3 ?xy_final ?xy_final2 ?xy_between_final - position ?element - right_l )
   :precondition (and 
@@ -82,7 +81,7 @@
 		)
 )
 
-;; moving a piece "l" to the left
+;; moving a piece "L" to the left
 (:action move_l_left
   :parameters (?xy_initial1 ?xy_initial2 ?xy_initial3 ?xy_final ?xy_final2 - position ?element - right_l )
   :precondition (and 
@@ -105,7 +104,7 @@
 		)
 )
 
-;; moving a piece "l" up
+;; moving a piece "L" up
 (:action move_l_up
   :parameters (?xy_initial1 ?xy_initial2 ?xy_initial3 ?xy_final ?xy_final2 ?xy_between_final - position ?element - right_l )
   :precondition (and 
@@ -132,7 +131,7 @@
 		)
 )
 
-;; moving a piece "l" down
+;; moving a piece "L" down
 (:action move_l_down
   :parameters (?xy_initial1 ?xy_initial2 ?xy_initial3 ?xy_final ?xy_final2 - position ?element - right_l )
   :precondition (and 

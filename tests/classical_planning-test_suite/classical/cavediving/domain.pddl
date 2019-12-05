@@ -1,7 +1,7 @@
-;; cave diving adl
-;; authors: nathan robinson,
-;;          christian muise, and
-;;          charles gretton
+;; Cave Diving ADL
+;; Authors: Nathan Robinson,
+;;          Christian Muise, and
+;;          Charles Gretton
 
 (define (domain cave-diving-adl)
   (:requirements :typing :action-costs :adl)

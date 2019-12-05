@@ -1,5 +1,5 @@
 (define (domain mystery-prime-strips)
-   (:requirements :negative-preconditions :equality) ; see malte: fix below
+   (:requirements :negative-preconditions :equality) ; see Malte: FIX below
    (:predicates
        (province ?x)
        (planet ?x)
@@ -57,7 +57,7 @@
                     (harmony ?v ?s2)))
    (:action drink
       :parameters (?n1 ?n2 ?l11 ?l12 ?l13 ?l21 ?l22)
-      :precondition (and (not (= ?n1 ?n2)) ; malte: fix
+      :precondition (and (not (= ?n1 ?n2)) ; MALTE: fix
                          (locale ?n1 ?l11)
                          (attacks ?l12 ?l11)
                          (attacks ?l13 ?l12)

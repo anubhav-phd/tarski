@@ -1,16 +1,16 @@
-;; data network planning domain
-;; authors: manuel heusner, florian pommerening, alvaro torralba
+;; Data Network Planning Domain
+;; Authors: Manuel Heusner, Florian Pommerening, Alvaro Torralba
 ;;
-;; in a given network of servers, each server can produce data by processing
-;; existing data and send the data to connected servers. each server has a disk
-;; and random access memory (ram). data that is saved on the disk of a server
-;; must be loaded into ram of the server in order to be processed or sent to the
-;; ram of another server.
+;; In a given network of servers, each server can produce data by processing
+;; existing data and send the data to connected servers. Each server has a disk
+;; and random access memory (RAM). Data that is saved on the disk of a server
+;; must be loaded into RAM of the server in order to be processed or sent to the
+;; RAM of another server.
 ;;
-;; the ability to process and distribute the data in the network is constrained
+;; The ability to process and distribute the data in the network is constrained
 ;; by
 ;;     - the connections between servers,
-;;     - the capacity of server's ram,
+;;     - the capacity of server's RAM,
 ;;     - the availability of scripts on servers, and
 ;;     - the cost of
 ;;         - loading and saving data, which depends on the data size and the (disk's io performance of a) server,
@@ -22,12 +22,12 @@
     data script server numbers
 )
 (:predicates
-    (script-io ?s - script ?in1 - data ?in2 - data ?out - data)
-    (connected ?from - server ?to - server)
-    (data-size ?d - data ?n - numbers)
-    (capacity ?s - server ?n - numbers)
-    (sum ?n1 - numbers ?n2 - numbers ?sum - numbers)
-    (less-equal ?n1 - numbers ?n2 - numbers)
+    (SCRIPT-IO ?s - script ?in1 - data ?in2 - data ?out - data)
+    (CONNECTED ?from - server ?to - server)
+    (DATA-SIZE ?d - data ?n - numbers)
+    (CAPACITY ?s - server ?n - numbers)
+    (SUM ?n1 - numbers ?n2 - numbers ?sum - numbers)
+    (LESS-EQUAL ?n1 - numbers ?n2 - numbers)
     (saved ?d - data ?s - server)
     (cached ?d - data ?s - server)
     (usage ?s - server ?n - numbers)
@@ -38,13 +38,13 @@
     (send-cost ?from ?to - server ?size - numbers) - number
     (io-cost ?s - server ?size - numbers) - number
 )
-;; release data from ram.
+;; Release data from RAM.
 (:action release
     :parameters (?d - data ?s - server ?size ?before ?after - numbers)
     :precondition
     (and
-        (data-size ?d ?size)
-        (sum ?after ?size ?before)
+        (DATA-SIZE ?d ?size)
+        (SUM ?after ?size ?before)
         (cached ?d ?s)
         (usage ?s ?before)
     )
@@ -57,12 +57,12 @@
     )
 )
 
-;; save data from ram to disk.
+;; Save data from RAM to disk.
 (:action save
     :parameters (?d - data ?size - numbers ?s - server)
     :precondition
     (and
-        (data-size ?d ?size)
+        (DATA-SIZE ?d ?size)
         (cached ?d ?s)
     )
     :effect
@@ -72,15 +72,15 @@
     )
 )
 
-;; load data from disk into ram.
+;; Load data from disk into RAM.
 (:action load
     :parameters (?d - data ?s - server ?size ?limit ?before ?after - numbers)
     :precondition
     (and
-        (data-size ?d ?size)
-        (capacity ?s ?limit)
-        (sum ?before ?size ?after)
-        (less-equal ?after ?limit)
+        (DATA-SIZE ?d ?size)
+        (CAPACITY ?s ?limit)
+        (SUM ?before ?size ?after)
+        (LESS-EQUAL ?after ?limit)
         (saved ?d ?s)
         (not (cached ?d ?s))
         (usage ?s ?before)
@@ -94,16 +94,16 @@
     )
 )
 
-;; send data from ram of one server to ram of another server.
+;; Send data from RAM of one server to RAM of another server.
 (:action send
     :parameters (?d - data ?from ?to - server ?size ?limit ?before ?after - numbers)
     :precondition
     (and
-        (connected ?from ?to)
-        (data-size ?d ?size)
-        (capacity ?to ?limit)
-        (sum ?before ?size ?after)
-        (less-equal ?after ?limit)
+        (CONNECTED ?from ?to)
+        (DATA-SIZE ?d ?size)
+        (CAPACITY ?to ?limit)
+        (SUM ?before ?size ?after)
+        (LESS-EQUAL ?after ?limit)
         (cached ?d ?from)
         (not (cached ?d ?to))
         (usage ?to ?before)
@@ -117,16 +117,16 @@
     )
 )
 
-;; executes a script that processes two data items from ram and produces another data item in ram.
+;; Executes a script that processes two data items from RAM and produces another data item in RAM.
 (:action process
     :parameters (?in1 ?in2 ?out - data ?sc - script ?s - server ?size ?limit ?before ?after - numbers)
     :precondition
     (and
-        (script-io ?sc ?in1 ?in2 ?out)
-        (data-size ?out ?size)
-        (capacity ?s ?limit)
-        (sum ?before ?size ?after)
-        (less-equal ?after ?limit)
+        (SCRIPT-IO ?sc ?in1 ?in2 ?out)
+        (DATA-SIZE ?out ?size)
+        (CAPACITY ?s ?limit)
+        (SUM ?before ?size ?after)
+        (LESS-EQUAL ?after ?limit)
         (cached ?in1 ?s)
         (cached ?in2 ?s)
         (not (cached ?out ?s))

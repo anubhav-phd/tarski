@@ -1,10 +1,10 @@
-;; peg solitaire sequential domain
+;; Peg Solitaire sequential domain
 
 (define (domain pegsolitaire-sequential)
     (:requirements :typing :action-costs)
     (:types location - object)
     (:predicates
-        (in-line ?x ?y ?z - location)
+        (IN-LINE ?x ?y ?z - location)
         (occupied ?l - location)
         (free ?l - location)
         (move-ended)
@@ -16,7 +16,7 @@
      :parameters (?from - location ?over - location ?to - location)
      :precondition (and 
                        (move-ended)
-                       (in-line ?from ?over ?to)
+                       (IN-LINE ?from ?over ?to)
                        (occupied ?from)
                        (occupied ?over)
                        (free ?to)
@@ -38,7 +38,7 @@
      :parameters (?from - location ?over - location ?to - location)
      :precondition (and 
                        (last-visited ?from)
-                       (in-line ?from ?over ?to)
+                       (IN-LINE ?from ?over ?to)
                        (occupied ?from)
                        (occupied ?over)
                        (free ?to)

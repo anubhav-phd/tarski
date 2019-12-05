@@ -1,19 +1,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; the child-snack domain 2013
+;; The child-snack domain 2013
 ;;
-;; this domain is for planning how to make and serve sandwiches for a group of
-;; children in which some are allergic to gluten. there are two actions for
-;; making sandwiches from their ingredients. the first one makes a sandwich and
+;; This domain is for planning how to make and serve sandwiches for a group of
+;; children in which some are allergic to gluten. There are two actions for
+;; making sandwiches from their ingredients. The first one makes a sandwich and
 ;; the second one makes a sandwich taking into account that all ingredients are
-;; gluten-free. there are also actions to put a sandwich on a tray, to move a tray
+;; gluten-free. There are also actions to put a sandwich on a tray, to move a tray
 ;; from one place to another and to serve sandwiches.
 ;; 
-;; problems in this domain define the ingredients to make sandwiches at the initial
-;; state. goals consist of having all kids served with a sandwich to which they
+;; Problems in this domain define the ingredients to make sandwiches at the initial
+;; state. Goals consist of having all kids served with a sandwich to which they
 ;; are not allergic.
 ;; 
-;; author: raquel fuentetaja and tomás de la rosa
+;; Author: Raquel Fuentetaja and Tomás de la Rosa
 ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

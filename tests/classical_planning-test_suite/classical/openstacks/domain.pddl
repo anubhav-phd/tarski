@@ -1,8 +1,8 @@
-; ipc5 domain: openstacks propositional -- strips forced sequential version
-; author: patrik haslum
-; the problem instances for this domain were taken from the problem
-; collection of the 2005 constraint modelling challenge, organized by
-; barbara smith & ian gent (see http://www.dcs.st-and.ac.uk/~ipg/challenge/).
+; IPC5 Domain: Openstacks Propositional -- strips forced sequential version
+; Author: Patrik Haslum
+; The problem instances for this domain were taken from the problem
+; collection of the 2005 Constraint Modelling Challenge, organized by
+; Barbara Smith & Ian Gent (see http://www.dcs.st-and.ac.uk/~ipg/challenge/).
 
 (define (domain openstacks-sequencedstrips)
   (:requirements :typing :adl)

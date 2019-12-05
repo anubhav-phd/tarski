@@ -1,10 +1,7 @@
 (define (domain civ) 
-  (:requirements :action-costs :fluents :typing :conditional-effects) 
-  (:types
-      store - object 
-      place vehicle - store
-      resource
-  ) 
+  (:requirements :fluents :typing :conditional-effects) 
+  (:types place vehicle - store 
+	  resource) 
   (:constants timber wood coal stone iron ore - resource)
   (:predicates 
    (connected-by-land ?p1 - place ?p2 - place) 
@@ -40,7 +37,7 @@
    ) 
  
  
-  ;; a.1: loading and unloading. 
+  ;; A.1: Loading and unloading. 
  
   (:action load
    :parameters (?v - vehicle ?p - place ?r - resource) 
@@ -61,8 +58,8 @@
 		(increase (available ?r ?p) 1)
 		(increase (labour) 1))) 
  
-  ;; a.2: moving vehicles. 
-  ;; moving trains and ships consumes coal, which has to be 
+  ;; A.2: Moving vehicles. 
+  ;; Moving trains and ships consumes coal, which has to be 
   ;; loaded in the vehicle. 
  
   (:action move-cart 
@@ -98,7 +95,7 @@
 		(increase (pollution) 2)
 	)) 
  
-  ;; b.1: building structures. 
+  ;; B.1: Building structures. 
  
   (:action build-cabin 
    :parameters (?p - place) 
@@ -179,7 +176,7 @@
 		(decrease (available wood ?p) 1)
 		(decrease (available stone ?p) 1)))
  
-  ;; b.2: building vehicles. 
+  ;; B.2: Building vehicles. 
  
   (:action build-cart 
    :parameters (?p - place ?v - vehicle) 
@@ -236,7 +233,7 @@
            ) 
    )
  
-  ;; c.1: obtaining raw resources. 
+  ;; C.1: Obtaining raw resources. 
  
   (:action fell-timber 
    :parameters (?p - place) 
@@ -260,7 +257,7 @@
 		(increase (resource-use) 2)
 	)) 
  
-  ;; c.1: refining resources. 
+  ;; C.1: Refining resources. 
  
   (:action burn-coal 
    :parameters (?p - place) 

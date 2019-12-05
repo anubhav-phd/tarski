@@ -1,13 +1,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;               tidybot
+;;               Tidybot
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 0, 0 at top left
 
-(define (domain tidybot)
+(define (domain TIDYBOT)
   (:requirements :strips :typing :equality)
   (:types robot cart object xc yc xrel yrel)
   (:predicates
-   ;; constant preds
+   ;; Constant preds
    (leftof                   ?x1 - xc ?x2 - xc)
    (above                    ?y1 - yc ?y2 - yc)
    (leftof-rel               ?x1 - xrel ?x2 - xrel)
@@ -18,23 +18,23 @@
    (zeroy-rel    ?y - yrel)
    (object-goal  ?o - object ?x - xc  ?y - yc)
 
-   ;; robot base
+   ;; Robot base
    (parked       ?r - robot)
    (base-pos     ?r - robot  ?x - xc  ?y - yc)
    (base-obstacle            ?x - xc  ?y - yc)
 
-   ;; objects
+   ;; Objects
    (object-pos   ?o - object ?x - xc  ?y - yc)
    (object-done  ?o - object)
    (surface ?x - xc ?y - yc)
 
-   ;; gripper
+   ;; Gripper
    (holding       ?r - robot ?o - object)
    (gripper-empty ?r - robot)
    (gripper-rel   ?r - robot ?x - xrel ?y - yrel)
    (gripper-obstacle         ?x - xc  ?y - yc)
  
-   ;; cart
+   ;; Cart
    (pushing       ?r - robot ?c - cart)
    (not-pushing   ?r - robot)
    (not-pushed    ?c - cart)
@@ -42,7 +42,7 @@
    (on-cart       ?o - object ?c - cart) 
    )
 
-  ;; base movement actions
+  ;; Base movement actions
   (:action unpark
    :parameters (?r - robot ?x - xrel ?y - yrel)
    :precondition (and (parked ?r) (gripper-rel ?r ?x ?y) (zerox-rel ?x) (zeroy-rel ?y))
@@ -99,7 +99,7 @@
                       (not (base-obstacle ?x ?cy)) (base-obstacle ?x ?dy))
    )
 
-  ;; base movement with cart
+  ;; Base movement with cart
 
   (:action base-cart-left
    :parameters (?r - robot ?c - cart ?x1 - xc ?x2 - xc ?y - yc ?cx1 - xc ?cx2 - xc ?cy - yc)
@@ -147,7 +147,7 @@
 
 
 
-  ;; gripper movement actions
+  ;; Gripper movement actions
 
   (:action gripper-left
    :parameters (?r - robot ?basex - xc ?basey - yc
@@ -213,7 +213,7 @@
                       (not (gripper-obstacle ?gxabs ?cgyabs)) (gripper-obstacle ?gxabs ?dgyabs))
    )
 
-  ;; cart grasping/ungrasping
+  ;; Cart grasping/ungrasping
   (:action grasp-cart-left
    :parameters (?r - robot ?c - cart ?x - xc ?y - yc ?cx - xc)
    :precondition (and (not (parked ?r)) (not-pushed ?c)
@@ -248,7 +248,7 @@
    :precondition (and (pushing ?r ?c))
    :effect (and (not (pushing ?r ?c)) (not-pushing ?r) (not-pushed ?c)))
   
-  ;; object manipulation actions
+  ;; Object manipulation actions
 
 
   (:action get-left

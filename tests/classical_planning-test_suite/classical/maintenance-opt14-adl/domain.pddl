@@ -1,9 +1,9 @@
-; there are mechanics who on any day may work at one
+; There are mechanics who on any day may work at one
 ; of several cities where the airplane maintenance
-; company has facilities. there are airplanes each of
+; company has facilities. There are airplanes each of
 ; which has to be maintained during the given time period.
-; the airplanes are guaranteed to visit some of the cities
-; on given days. the problem is to schedule the presence
+; The airplanes are guaranteed to visit some of the cities
+; on given days. The problem is to schedule the presence
 ; of the mechanics so that each plane will get maintenance.
 
 (define (domain maintenance-scheduling-domain)

@@ -3,15 +3,15 @@
   (:types segment car - object)
   (:predicates (on ?c - car ?s - segment)
 	       (analyzed ?c - car)
-	       (cycle-2 ?s1 ?s2 - segment)
-	       (cycle-4 ?s1 ?s2 ?s3 ?s4 - segment)
-	       (cycle-2-with-analysis ?s1 ?s2 - segment)
-	       (cycle-4-with-analysis ?s1 ?s2 ?s3 ?s4 - segment))
+	       (CYCLE-2 ?s1 ?s2 - segment)
+	       (CYCLE-4 ?s1 ?s2 ?s3 ?s4 - segment)
+	       (CYCLE-2-WITH-ANALYSIS ?s1 ?s2 - segment)
+	       (CYCLE-4-WITH-ANALYSIS ?s1 ?s2 ?s3 ?s4 - segment))
   (:functions (total-cost) - number)
 
   (:action analyze-2
    :parameters (?s1 ?s2 - segment ?c1 ?c2 - car)
-   :precondition (and (cycle-2-with-analysis ?s1 ?s2)
+   :precondition (and (CYCLE-2-WITH-ANALYSIS ?s1 ?s2)
 		      (on ?c1 ?s1)
 		      (on ?c2 ?s2)
 		  )
@@ -26,7 +26,7 @@
 
   (:action analyze-4
    :parameters (?s1 ?s2 ?s3 ?s4 - segment ?c1 ?c2 ?c3 ?c4 - car)
-   :precondition (and (cycle-4-with-analysis ?s1 ?s2 ?s3 ?s4)
+   :precondition (and (CYCLE-4-WITH-ANALYSIS ?s1 ?s2 ?s3 ?s4)
 		      (on ?c1 ?s1)
 		      (on ?c2 ?s2)
 		      (on ?c3 ?s3)
@@ -47,7 +47,7 @@
 	       
   (:action rotate-2
    :parameters (?s1 ?s2 - segment ?c1 ?c2 - car)
-   :precondition (and (cycle-2 ?s1 ?s2)
+   :precondition (and (CYCLE-2 ?s1 ?s2)
 		      (on ?c1 ?s1)
 		      (on ?c2 ?s2)
 		  )
@@ -61,7 +61,7 @@
 
   (:action rotate-4
    :parameters (?s1 ?s2 ?s3 ?s4 - segment ?c1 ?c2 ?c3 ?c4 - car)
-   :precondition (and (cycle-4 ?s1 ?s2 ?s3 ?s4)
+   :precondition (and (CYCLE-4 ?s1 ?s2 ?s3 ?s4)
 		      (on ?c1 ?s1)
 		      (on ?c2 ?s2)
 		      (on ?c3 ?s3)
