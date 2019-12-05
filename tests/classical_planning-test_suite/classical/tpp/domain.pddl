@@ -1,7 +1,7 @@
-; ipc5 domain: tpp propositional
-; authors: alfonso gerevini and alessandro saetti 
+; IPC5 Domain: TPP Propositional
+; Authors: Alfonso Gerevini and Alessandro Saetti 
 
-(define (domain tpp-propositional)
+(define (domain TPP-Propositional)
 (:requirements :strips :typing)
 (:types place locatable level - object
 	depot market - place
@@ -21,7 +21,7 @@
  :effect (and (not (at ?t ?from)) (at ?t ?to)))
 
 
-; ### load ###
+; ### LOAD ###
 ; ?l1 is the level of ?g ready to be loaded at ?m before loading
 ; ?l2 is the level of ?g ready to be loaded at ?m after loading
 ; ?l3 is the level of ?g in ?t before loading
@@ -35,7 +35,7 @@
 	      (ready-to-load ?g ?m ?l1) (not (ready-to-load ?g ?m ?l2))))
 
 
-; ### unload ###
+; ### UNLOAD ###
 ; ?l1 is the level of ?g in ?t before unloading
 ; ?l2 is the level of ?g in ?t after unloading
 ; ?l3 is the level of ?g in ?d before unloading
@@ -49,7 +49,7 @@
 	      (stored ?g ?l4) (not (stored ?g ?l3))))
 
 
-; ### buy ###
+; ### BUY ###
 ; ?l1 is the level of ?g on sale at ?m before buying
 ; ?l2 is the level of ?g on sale at ?m after buying 
 ; ?l3 is the level of ?g ready to be loaded at ?m before buying

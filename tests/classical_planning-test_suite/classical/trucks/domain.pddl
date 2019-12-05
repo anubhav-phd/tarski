@@ -1,7 +1,7 @@
-; ipc5 domain: trucks propositional
-; authors: yannis dimopoulos, alfonso gerevini and alessandro saetti 
+; IPC5 Domain: Trucks Propositional
+; Authors: Yannis Dimopoulos, Alfonso Gerevini and Alessandro Saetti 
 
-(define (domain trucks) 
+(define (domain Trucks) 
 (:requirements :typing :adl)  
 
 (:types truckarea time location locatable - object

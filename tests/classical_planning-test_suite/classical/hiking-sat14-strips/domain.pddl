@@ -1,9 +1,9 @@
-;  (c) 2001 copyright (c) university of huddersfield
-;  automatically produced from gipo from the domain hiking
-;  all rights reserved. use of this software is permitted for non-commercial
-;  research purposes, and it may be copied only for that use.  all copies must
-;  include this copyright message.  this software is made available as is, and
-;  neither the gipo team nor the university of huddersfield make any warranty about
+;  (c) 2001 Copyright (c) University of Huddersfield
+;  Automatically produced from GIPO from the domain hiking
+;  All rights reserved. Use of this software is permitted for non-commercial
+;  research purposes, and it may be copied only for that use.  All copies must
+;  include this copyright message.  This software is made available AS IS, and
+;  neither the GIPO team nor the University of Huddersfield make any warranty about
 ;  the software or its performance.
 
 (define (domain hiking)

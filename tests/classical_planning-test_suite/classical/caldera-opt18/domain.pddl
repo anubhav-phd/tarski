@@ -1,5 +1,5 @@
-;copyright 2018 the mitre corporation. all rights reserved. approved for public release. distribution unlimited 17-2122.
-; for more information on caldera, the automated adversary emulation system, visit https://github.com/mitre/caldera or email attack@mitre.org
+;Copyright 2018 The MITRE Corporation. All rights reserved. Approved for public release. Distribution unlimited 17-2122.
+; For more information on CALDERA, the automated adversary emulation system, visit https://github.com/mitre/caldera or email attack@mitre.org
 (define (domain caldera)
 (:requirements :equality :typing :conditional-effects :negative-preconditions)
 (:types
@@ -56,35 +56,35 @@
     (knows ?obj - object_type)
     (created ?obj - object_type)
     (knows_property ?obj - object_type ?prop - property)
-    (prop_timedelta ?a - observedhost ?b - observedtimedelta)
+    (PROP_TIMEDELTA ?a - observedhost ?b - observedtimedelta)
     (prop_src_host ?a - observedshare ?b - observedhost)
-    (prop_dns_domain_name ?a - observedhost ?b - string)
-    (prop_fqdn ?a - observedhost ?b - string)
-    (prop_password ?a - observeddomaincredential ?b - string)
+    (PROP_DNS_DOMAIN_NAME ?a - observedhost ?b - string)
+    (PROP_FQDN ?a - observedhost ?b - string)
+    (PROP_PASSWORD ?a - observeddomaincredential ?b - string)
     (prop_host ?a - object_type ?b - object_type)
     (prop_share_name ?a - observedshare ?b - string)
-    (prop_dc ?a - observedhost ?b - boolean)
-    (mem_cached_domain_creds ?a - observedhost ?b - observeddomaincredential)
+    (PROP_DC ?a - observedhost ?b - boolean)
+    (MEM_CACHED_DOMAIN_CREDS ?a - observedhost ?b - observeddomaincredential)
     (prop_executable ?a - observedrat ?b - string)
-    (prop_user ?a - observeddomaincredential ?b - observeddomainuser)
+    (PROP_USER ?a - observeddomaincredential ?b - observeddomainuser)
     (prop_cred ?a - observeddomainuser ?b - observeddomaincredential)
     (prop_share_path ?a - observedshare ?b - string)
-    (prop_hostname ?a - observedhost ?b - string)
+    (PROP_HOSTNAME ?a - observedhost ?b - string)
     (mem_hosts ?a - observeddomain ?b - observedhost)
-    (prop_is_group ?a - observeddomainuser ?b - boolean)
-    (mem_domain_user_admins ?a - observedhost ?b - observeddomainuser)
-    (prop_seconds ?a - observedtimedelta ?b - num)
-    (prop_microseconds ?a - observedtimedelta ?b - num)
-    (prop_windows_domain ?a - observeddomain ?b - string)
-    (prop_domain ?a - object_type ?b - object_type)
+    (PROP_IS_GROUP ?a - observeddomainuser ?b - boolean)
+    (MEM_DOMAIN_USER_ADMINS ?a - observedhost ?b - observeddomainuser)
+    (PROP_SECONDS ?a - observedtimedelta ?b - num)
+    (PROP_MICROSECONDS ?a - observedtimedelta ?b - num)
+    (PROP_WINDOWS_DOMAIN ?a - observeddomain ?b - string)
+    (PROP_DOMAIN ?a - object_type ?b - object_type)
     (prop_dest_host ?a - observedshare ?b - observedhost)
-    (prop_dns_domain ?a - observeddomain ?b - string)
+    (PROP_DNS_DOMAIN ?a - observeddomain ?b - string)
     (prop_elevated ?a - observedrat ?b - boolean)
-    (prop_username ?a - observeddomainuser ?b - string)
+    (PROP_USERNAME ?a - observeddomainuser ?b - string)
     (prop_path ?a - observedfile ?b - string)
-    (prop_sid ?a - observeddomainuser ?b - string)
+    (PROP_SID ?a - observeddomainuser ?b - string)
 )
-; enumerates the windows domain
+; Enumerates the Windows Domain
 (:action get_domain
     :parameters (?v00 - observedrat ?v01 - observedhost ?v02 - string)
     :precondition
@@ -93,13 +93,13 @@
         (knows ?v01)
         (prop_host ?v00 ?v01)
         (knows_property ?v00 phost)
-        (prop_fqdn ?v01 ?v02)
+        (PROP_FQDN ?v01 ?v02)
         (knows_property ?v01 pfqdn)
     )
     :effect
     (forall (?v03 - observeddomain)
         (when
-            (prop_domain ?v01 ?v03)
+            (PROP_DOMAIN ?v01 ?v03)
             (and
                 (knows ?v03)
                 (knows_property ?v01 pdomain)
@@ -112,7 +112,7 @@
     )
 )
 
-; gets all computers in the domain
+; Gets all computers in the domain
 (:action get_computers
     :parameters (?v00 - observedrat ?v02 - observeddomain)
     :precondition
@@ -125,7 +125,7 @@
         (knows_property ?v02 phosts)
         (forall (?v01 - observedhost)
             (when
-                (prop_domain ?v01 ?v02)
+                (PROP_DOMAIN ?v01 ?v02)
                 (and
                     (knows ?v01)
                     (knows_property ?v01 pdomain)
@@ -151,7 +151,7 @@
         (knows_property ?v01 pdomain_user_admins)
         (forall (?v04 - observeddomainuser)
             (when
-                (mem_domain_user_admins ?v01 ?v04)
+                (MEM_DOMAIN_USER_ADMINS ?v01 ?v04)
                 (and
                     (knows ?v04)
                     (knows_property ?v04 pusername)
@@ -164,7 +164,7 @@
     )
 )
 
-; gets all credentials on the target host that have logged in since last reboot
+; Gets all credentials on the target host that have logged in since last reboot
 (:action creds
     :parameters (?v00 - observedrat ?v01 - observedhost ?v08 - observeddomain)
     :precondition
@@ -180,7 +180,7 @@
         (forall (?v03 - observeddomaincredential ?v05 - observeddomainuser)
             (when
                 (and
-                    (mem_cached_domain_creds ?v01 ?v03)
+                    (MEM_CACHED_DOMAIN_CREDS ?v01 ?v03)
                     (prop_cred ?v05 ?v03)
                     (prop_elevated ?v00 yes)
                 )
@@ -212,27 +212,27 @@
         (prop_host ?v00 ?v01)
         (knows_property ?v00 phost)
         (knows ?v02)
-        (prop_fqdn ?v02 ?v03)
+        (PROP_FQDN ?v02 ?v03)
         (knows_property ?v02 pfqdn)
         (knows ?v04)
-        (prop_password ?v04 ?v05)
+        (PROP_PASSWORD ?v04 ?v05)
         (knows_property ?v04 ppassword)
         (knows ?v06)
-        (prop_user ?v04 ?v06)
+        (PROP_USER ?v04 ?v06)
         (knows_property ?v04 puser)
-        (prop_username ?v06 ?v07)
+        (PROP_USERNAME ?v06 ?v07)
         (knows_property ?v06 pusername)
         (knows ?v08)
-        (prop_domain ?v06 ?v08)
+        (PROP_DOMAIN ?v06 ?v08)
         (knows_property ?v06 pdomain)
-        (prop_windows_domain ?v08 ?v09)
+        (PROP_WINDOWS_DOMAIN ?v08 ?v09)
         (knows_property ?v08 pwindows_domain)
         (not (= ?v01 ?v02))
         (not (created ?v10))
     )
     :effect
     (when
-        (mem_domain_user_admins ?v02 ?v06)
+        (MEM_DOMAIN_USER_ADMINS ?v02 ?v06)
         (and
             (knows ?v10)
             (created ?v10)
@@ -248,7 +248,7 @@
     )
 )
 
-; copies a file over a mounted network share
+; Copies a file over a mounted network share
 (:action smb_copy
     :parameters (?v00 - observedrat ?v01 - observedhost ?v02 - string ?v03 - observedshare ?v04 - observedhost ?v05 - observedhost ?v06 - string ?v07 - observedfile)
     :precondition
@@ -286,7 +286,7 @@
     )
 )
 
-; get the time on another computer
+; Get the time on another computer
 (:action net_time
     :parameters (?v00 - observedrat ?v01 - observedhost ?v02 - observedtimedelta)
     :precondition
@@ -305,7 +305,7 @@
     )
 )
 
-; run a process remotely with wmic
+; Run a process remotely with WMIC
 (:action wmic
     :parameters (?v00 - observedrat ?v01 - observedhost ?v02 - observedhost ?v03 - observedfile ?v04 - string ?v06 - observeddomaincredential ?v07 - observeddomainuser ?v08 - observeddomain ?v09 - string ?v10 - string ?v11 - observedrat)
     :precondition
@@ -323,21 +323,21 @@
         (knows_property ?v03 phost)
         (knows ?v06)
         (knows ?v07)
-        (prop_user ?v06 ?v07)
+        (PROP_USER ?v06 ?v07)
         (knows_property ?v06 puser)
         (knows ?v08)
-        (prop_domain ?v07 ?v08)
+        (PROP_DOMAIN ?v07 ?v08)
         (knows_property ?v07 pdomain)
-        (prop_windows_domain ?v08 ?v09)
+        (PROP_WINDOWS_DOMAIN ?v08 ?v09)
         (knows_property ?v08 pwindows_domain)
-        (prop_password ?v06 ?v10)
+        (PROP_PASSWORD ?v06 ?v10)
         (knows_property ?v06 ppassword)
         (not (= ?v01 ?v02))
         (not (created ?v11))
     )
     :effect
     (when
-        (mem_domain_user_admins ?v02 ?v07)
+        (MEM_DOMAIN_USER_ADMINS ?v02 ?v07)
         (and
             (knows ?v11)
             (created ?v11)

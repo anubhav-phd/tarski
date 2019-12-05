@@ -26,7 +26,7 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; move card between columns.  
+;;;; Move card between columns.  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move card from one column to another
@@ -82,7 +82,7 @@
 			(not (colspace ?cols))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; move card from column to home 
+;;;; Move card from column to home 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	(:action col-to-home
@@ -107,7 +107,7 @@
 			(not (faceup ?card))
 			(not (clear ?card))))
 
-;; move card from column to home - create an empty column
+;; Move card from column to home - create an empty column
 
 	(:action col-to-home-b
 		:parameters (?card ?homecard - card ?suit - suittype ?vcard - num 
@@ -134,7 +134,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; move card from talon to column 
+;;;; Move card from talon to column 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 	(:action tal-to-col
@@ -308,7 +308,7 @@
 			(not (bottomtalon ?card))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; move card from talon to home 
+;;;; Move card from talon to home 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move card from talon to home
@@ -407,7 +407,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; move card from home to column (pointless to move aces from home)
+;;;; Move card from home to column (pointless to move aces from home)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; move card from home to column
@@ -457,7 +457,7 @@
 			(not (home ?card))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; turn deck
+;;;; Turn Deck
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			
 ;; turn deck

@@ -3,34 +3,34 @@
   (:domain pipesworld_strips)
   (:objects
 
-    	b0 b3 b1 b4 b2 b5 - batch-atom
-	a1 a2 a3 - area
-	s12 s13 - pipe
-	ta1-1-lco - tank-slot
-	ta1-1-gasoleo - tank-slot
-	ta1-1-rat-a - tank-slot
-	ta1-1-oca1 - tank-slot
-	ta1-1-oc1b - tank-slot
-	ta2-1-lco - tank-slot
-	ta2-1-gasoleo - tank-slot
-	ta2-1-rat-a - tank-slot
-	ta2-1-oca1 - tank-slot
-	ta2-1-oc1b - tank-slot
-	ta3-1-lco - tank-slot
-	ta3-1-gasoleo - tank-slot
-	ta3-1-rat-a - tank-slot
-	ta3-1-oca1 - tank-slot
-	ta3-1-oc1b - tank-slot
+    	B0 B3 B1 B4 B2 B5 - batch-atom
+	A1 A2 A3 - area
+	S12 S13 - pipe
+	TA1-1-lco - tank-slot
+	TA1-1-gasoleo - tank-slot
+	TA1-1-rat-a - tank-slot
+	TA1-1-oca1 - tank-slot
+	TA1-1-oc1b - tank-slot
+	TA2-1-lco - tank-slot
+	TA2-1-gasoleo - tank-slot
+	TA2-1-rat-a - tank-slot
+	TA2-1-oca1 - tank-slot
+	TA2-1-oc1b - tank-slot
+	TA3-1-lco - tank-slot
+	TA3-1-gasoleo - tank-slot
+	TA3-1-rat-a - tank-slot
+	TA3-1-oca1 - tank-slot
+	TA3-1-oc1b - tank-slot
 	
 
   )
   (:init
 
-    ;; all pipelines segments are in normal state
-    		(normal s12)
-		(normal s13)
+    ;; All pipelines segments are in normal state
+    		(normal S12)
+		(normal S13)
 
-    ;; interfaces restrictions
+    ;; Interfaces restrictions
     	(may-interface lco lco)
 	(may-interface gasoleo gasoleo)
 	(may-interface rat-a rat-a)
@@ -54,89 +54,89 @@
 	(may-interface oc1b oca1)
 	
 
-    ;; network topology definition
-    	(connect a1 a2 s12)
-	(connect a1 a3 s13)
+    ;; Network topology definition
+    	(connect A1 A2 S12)
+	(connect A1 A3 S13)
 	
 
-    ;; specify tank location
-    	(tank-slot-product-location ta1-1-lco lco a1)
-	(tank-slot-product-location ta1-1-gasoleo gasoleo a1)
-	(tank-slot-product-location ta1-1-rat-a rat-a a1)
-	(tank-slot-product-location ta1-1-oca1 oca1 a1)
-	(tank-slot-product-location ta1-1-oc1b oc1b a1)
-	(tank-slot-product-location ta2-1-lco lco a2)
-	(tank-slot-product-location ta2-1-gasoleo gasoleo a2)
-	(tank-slot-product-location ta2-1-rat-a rat-a a2)
-	(tank-slot-product-location ta2-1-oca1 oca1 a2)
-	(tank-slot-product-location ta2-1-oc1b oc1b a2)
-	(tank-slot-product-location ta3-1-lco lco a3)
-	(tank-slot-product-location ta3-1-gasoleo gasoleo a3)
-	(tank-slot-product-location ta3-1-rat-a rat-a a3)
-	(tank-slot-product-location ta3-1-oca1 oca1 a3)
-	(tank-slot-product-location ta3-1-oc1b oc1b a3)
+    ;; Specify tank location
+    	(tank-slot-product-location TA1-1-lco lco A1)
+	(tank-slot-product-location TA1-1-gasoleo gasoleo A1)
+	(tank-slot-product-location TA1-1-rat-a rat-a A1)
+	(tank-slot-product-location TA1-1-oca1 oca1 A1)
+	(tank-slot-product-location TA1-1-oc1b oc1b A1)
+	(tank-slot-product-location TA2-1-lco lco A2)
+	(tank-slot-product-location TA2-1-gasoleo gasoleo A2)
+	(tank-slot-product-location TA2-1-rat-a rat-a A2)
+	(tank-slot-product-location TA2-1-oca1 oca1 A2)
+	(tank-slot-product-location TA2-1-oc1b oc1b A2)
+	(tank-slot-product-location TA3-1-lco lco A3)
+	(tank-slot-product-location TA3-1-gasoleo gasoleo A3)
+	(tank-slot-product-location TA3-1-rat-a rat-a A3)
+	(tank-slot-product-location TA3-1-oca1 oca1 A3)
+	(tank-slot-product-location TA3-1-oc1b oc1b A3)
 	
 
-    ;; specify tank maximum capacity
+    ;; Specify tank maximum capacity
     	
 
-    ;; specify tank product
+    ;; Specify tank product
     	
 
-    ;; batch-atoms products
-    	(is-product b0 oc1b)
-	(is-product b3 rat-a)
-	(is-product b1 lco)
-	(is-product b4 lco)
-	(is-product b2 gasoleo)
-	(is-product b5 oca1)
+    ;; Batch-atoms products
+    	(is-product B0 oc1b)
+	(is-product B3 rat-a)
+	(is-product B1 lco)
+	(is-product B4 lco)
+	(is-product B2 gasoleo)
+	(is-product B5 oca1)
 	
 
-    ;; specify tank current volume
+    ;; Specify tank current volume
     	
 
-    ;; batch-atoms initially located in areas
-    	(on b0 a1)
-	(occupied ta1-1-oc1b)
+    ;; Batch-atoms initially located in areas
+    	(on B0 A1)
+	(occupied TA1-1-oc1b)
 	
-	(on b3 a1)
-	(occupied ta1-1-rat-a)
+	(on B3 A1)
+	(occupied TA1-1-rat-a)
 	
-	(on b1 a3)
-	(occupied ta3-1-lco)
+	(on B1 A3)
+	(occupied TA3-1-lco)
 	
-	(on b2 a1)
-	(occupied ta1-1-gasoleo)
+	(on B2 A1)
+	(occupied TA1-1-gasoleo)
 	
-	(not-occupied ta1-1-lco)
-	(not-occupied ta1-1-oca1)
-	(not-occupied ta2-1-lco)
-	(not-occupied ta2-1-gasoleo)
-	(not-occupied ta2-1-rat-a)
-	(not-occupied ta2-1-oca1)
-	(not-occupied ta2-1-oc1b)
-	(not-occupied ta3-1-gasoleo)
-	(not-occupied ta3-1-rat-a)
-	(not-occupied ta3-1-oca1)
-	(not-occupied ta3-1-oc1b)
+	(not-occupied TA1-1-lco)
+	(not-occupied TA1-1-oca1)
+	(not-occupied TA2-1-lco)
+	(not-occupied TA2-1-gasoleo)
+	(not-occupied TA2-1-rat-a)
+	(not-occupied TA2-1-oca1)
+	(not-occupied TA2-1-oc1b)
+	(not-occupied TA3-1-gasoleo)
+	(not-occupied TA3-1-rat-a)
+	(not-occupied TA3-1-oca1)
+	(not-occupied TA3-1-oc1b)
 	
 
-    ;; batch-atoms initially located in pipes
-    	(first b4 s12)
-	(last b4 s12)
-	(first b5 s13)
-	(last b5 s13)
+    ;; Batch-atoms initially located in pipes
+    	(first B4 S12)
+	(last B4 S12)
+	(first B5 S13)
+	(last B5 S13)
 	
-    ;; unitary pipeline segments
-    		(unitary s12)
-		(unitary s13)
+    ;; Unitary pipeline segments
+    		(unitary S12)
+		(unitary S13)
 
   )
   (:goal (and
-    	(on b2 a3)
-	(on b5 a2)
-			(normal s12)
-		(normal s13)
+    	(on B2 A3)
+	(on B5 A2)
+			(normal S12)
+		(normal S13)
 
   ))
 )

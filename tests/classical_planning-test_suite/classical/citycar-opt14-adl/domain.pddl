@@ -38,7 +38,7 @@
 		)
 )
 
-;; move the car out of the road to a junction. junction must be clear.
+;; move the car out of the road to a junction. Junction must be clear.
 (:action move_car_out_road
   :parameters (?xy_initial - junction ?xy_final - junction ?machine - car ?r1 - road)
   :precondition (and 
@@ -55,7 +55,7 @@
 		)
 )
 
-;; car in the final position. they are removed from the network and position is cleared.
+;; car in the final position. They are removed from the network and position is cleared.
 (:action car_arrived
   :parameters (?xy_final - junction ?machine - car )
   :precondition (and 

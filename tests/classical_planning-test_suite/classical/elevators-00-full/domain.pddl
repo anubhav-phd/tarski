@@ -3,7 +3,7 @@
   (:types passenger - object
           going_up going_down vip
 	  going_nonstop attendant never_alone 
-          conflict_a conflict_b - passenger
+          conflict_A conflict_B - passenger
           floor - object
          )
 
@@ -41,25 +41,25 @@
  :precondition (and (lift-at ?f)
 		    (imply
 		     (exists
-		      (?p - conflict_a)
+		      (?p - conflict_A)
 		      (or (and (not (served ?p))
 			       (origin ?p ?f))
 			  (and (boarded ?p)
 			       (not (destin ?p ?f)))))
 		     (forall 
-		      (?q - conflict_b)
+		      (?q - conflict_B)
 		      (and (or (destin ?q ?f)
 			       (not (boarded ?q)))
 			   (or (served ?q)
 			       (not (origin ?q ?f))))))
 		    (imply (exists 
-			    (?p - conflict_b)
+			    (?p - conflict_B)
 			    (or (and (not (served ?p))
 				     (origin ?p ?f))
 				(and (boarded ?p)
 				     (not (destin ?p ?f)))))
 			   (forall 
-			    (?q - conflict_a)
+			    (?q - conflict_A)
 			    (and (or (destin ?q ?f)
 				     (not (boarded ?q)))
 				 (or (served ?q)

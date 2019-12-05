@@ -1,14 +1,14 @@
-; (c) 1993,1994 copyright (c) university of washington
-;  written by tony barrett.
+; (c) 1993,1994 Copyright (c) University of Washington
+;  Written by Tony Barrett.
 
-;  all rights reserved. use of this software is permitted for non-commercial
-;  research purposes, and it may be copied only for that use.  all copies must
-;  include this copyright message.  this software is made available as is, and
-;  neither the authors nor the university of washington make any warranty about
+;  All rights reserved. Use of this software is permitted for non-commercial
+;  research purposes, and it may be copied only for that use.  All copies must
+;  include this copyright message.  This software is made available AS IS, and
+;  neither the authors nor the University of Washington make any warranty about
 ;  the software or its performance.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; joerg's fridgly domain
+;; Joerg's fridgly domain
 
 
 (define (domain fridge-domain)

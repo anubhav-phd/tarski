@@ -69,33 +69,33 @@
     (knows ?obj - object_type)
     (created ?obj - object_type)
     (knows_property ?obj - object_type ?prop - property)
-    (prop_timedelta ?a - observedhost ?b - observedtimedelta)
+    (PROP_TIMEDELTA ?a - observedhost ?b - observedtimedelta)
     (prop_src_host ?a - observedshare ?b - observedhost)
-    (prop_dns_domain_name ?a - observedhost ?b - string)
-    (prop_fqdn ?a - observedhost ?b - string)
-    (prop_password ?a - observeddomaincredential ?b - string)
+    (PROP_DNS_DOMAIN_NAME ?a - observedhost ?b - string)
+    (PROP_FQDN ?a - observedhost ?b - string)
+    (PROP_PASSWORD ?a - observeddomaincredential ?b - string)
     (prop_host ?a - object_type ?b - object_type)
     (prop_share_name ?a - observedshare ?b - string)
-    (prop_dc ?a - observedhost ?b - boolean)
-    (mem_cached_domain_creds ?a - observedhost ?b - observeddomaincredential)
+    (PROP_DC ?a - observedhost ?b - boolean)
+    (MEM_CACHED_DOMAIN_CREDS ?a - observedhost ?b - observeddomaincredential)
     (prop_executable ?a - observedrat ?b - string)
-    (prop_user ?a - observeddomaincredential ?b - observeddomainuser)
+    (PROP_USER ?a - observeddomaincredential ?b - observeddomainuser)
     (prop_cred ?a - observeddomainuser ?b - observeddomaincredential)
     (prop_share_path ?a - observedshare ?b - string)
-    (prop_hostname ?a - observedhost ?b - string)
+    (PROP_HOSTNAME ?a - observedhost ?b - string)
     (mem_hosts ?a - observeddomain ?b - observedhost)
-    (prop_is_group ?a - observeddomainuser ?b - boolean)
-    (mem_domain_user_admins ?a - observedhost ?b - observeddomainuser)
-    (prop_seconds ?a - observedtimedelta ?b - num)
-    (prop_microseconds ?a - observedtimedelta ?b - num)
-    (prop_windows_domain ?a - observeddomain ?b - string)
-    (prop_domain ?a - object_type ?b - object_type)
+    (PROP_IS_GROUP ?a - observeddomainuser ?b - boolean)
+    (MEM_DOMAIN_USER_ADMINS ?a - observedhost ?b - observeddomainuser)
+    (PROP_SECONDS ?a - observedtimedelta ?b - num)
+    (PROP_MICROSECONDS ?a - observedtimedelta ?b - num)
+    (PROP_WINDOWS_DOMAIN ?a - observeddomain ?b - string)
+    (PROP_DOMAIN ?a - object_type ?b - object_type)
     (prop_dest_host ?a - observedshare ?b - observedhost)
-    (prop_dns_domain ?a - observeddomain ?b - string)
+    (PROP_DNS_DOMAIN ?a - observeddomain ?b - string)
     (prop_elevated ?a - observedrat ?b - boolean)
-    (prop_username ?a - observeddomainuser ?b - string)
+    (PROP_USERNAME ?a - observeddomainuser ?b - string)
     (prop_path ?a - observedfile ?b - string)
-    (prop_sid ?a - observeddomainuser ?b - string)
+    (PROP_SID ?a - observeddomainuser ?b - string)
     (procnone)
     (do_5_2)
     (do_5_3)
@@ -119,7 +119,7 @@
     (arg_7 ?x - object)
     (arg_8 ?x - object)
     (arg_9 ?x - object)
-    (arg_10 ?x - object)
+    (ARG_10 ?x - object)
     (arg_11 ?x - object)
 )
 (:functions
@@ -130,7 +130,7 @@
     :precondition
     (and
         (knows_property ?v01 pfqdn)
-        (prop_fqdn ?v01 ?v02)
+        (PROP_FQDN ?v01 ?v02)
         (knows_property ?v00 phost)
         (prop_host ?v00 ?v01)
         (knows ?v01)
@@ -142,7 +142,7 @@
         (increase (total-cost) 6)
         (forall (?x4 - observeddomain)
             (when
-                (prop_domain ?v01 ?x4)
+                (PROP_DOMAIN ?v01 ?x4)
                 (and
                     (knows_property ?x4 pdns_domain)
                     (knows_property ?x4 pwindows_domain)
@@ -169,7 +169,7 @@
         (increase (total-cost) 6)
         (forall (?x3 - observedhost)
             (when
-                (prop_domain ?x3 ?v02)
+                (PROP_DOMAIN ?x3 ?v02)
                 (and
                     (knows_property ?x3 pfqdn)
                     (mem_hosts ?v02 ?x3)
@@ -196,7 +196,7 @@
         (increase (total-cost) 6)
         (forall (?x4 - observeddomainuser)
             (when
-                (mem_domain_user_admins ?v01 ?x4)
+                (MEM_DOMAIN_USER_ADMINS ?v01 ?x4)
                 (and
                     (knows_property ?x4 pdomain)
                     (knows_property ?x4 pis_group)
@@ -229,7 +229,7 @@
                 (and
                     (prop_elevated ?v00 yes)
                     (prop_cred ?x5 ?x4)
-                    (mem_cached_domain_creds ?v01 ?x4)
+                    (MEM_CACHED_DOMAIN_CREDS ?v01 ?x4)
                 )
                 (and
                     (knows_property ?v08 pwindows_domain)
@@ -253,11 +253,11 @@
     :parameters (?v06 - observeddomainuser ?v07 - string ?v08 - observeddomain ?v09 - string)
     :precondition
     (and
-        (prop_windows_domain ?v08 ?v09)
+        (PROP_WINDOWS_DOMAIN ?v08 ?v09)
         (knows_property ?v06 pdomain)
-        (prop_domain ?v06 ?v08)
+        (PROP_DOMAIN ?v06 ?v08)
         (knows_property ?v06 pusername)
-        (prop_username ?v06 ?v07)
+        (PROP_USERNAME ?v06 ?v07)
         (knows ?v06)
         (procnone)
     )
@@ -276,9 +276,9 @@
     :precondition
     (and
         (knows_property ?v04 puser)
-        (prop_user ?v04 ?v06)
+        (PROP_USER ?v04 ?v06)
         (knows_property ?v04 ppassword)
-        (prop_password ?v04 ?v05)
+        (PROP_PASSWORD ?v04 ?v05)
         (knows ?v04)
         (knows_property ?v00 phost)
         (knows ?v00)
@@ -324,7 +324,7 @@
     :parameters (?v00 - observedrat ?v01 - observedhost ?v02 - observedhost ?v03 - string)
     :precondition
     (and
-        (prop_fqdn ?v02 ?v03)
+        (PROP_FQDN ?v02 ?v03)
         (prop_host ?v00 ?v01)
         (do_5_4)
         (arg_1 ?v00)
@@ -354,7 +354,7 @@
     (and
         (increase (total-cost) 1)
         (when
-            (mem_domain_user_admins ?v02 ?v06)
+            (MEM_DOMAIN_USER_ADMINS ?v02 ?v06)
             (and
                 (prop_share_path ?v10 whatever)
                 (knows_property ?v10 pshare_path)
@@ -540,8 +540,8 @@
     :precondition
     (and
         (knows_property ?v07 pdomain)
-        (prop_domain ?v07 ?v08)
-        (prop_user ?v06 ?v07)
+        (PROP_DOMAIN ?v07 ?v08)
+        (PROP_USER ?v06 ?v07)
         (knows ?v07)
         (knows_property ?v03 phost)
         (knows_property ?v03 ppath)
@@ -565,9 +565,9 @@
     :parameters (?v06 - observeddomaincredential ?v08 - observeddomain ?v09 - string ?v10 - string)
     :precondition
     (and
-        (prop_password ?v06 ?v10)
+        (PROP_PASSWORD ?v06 ?v10)
         (knows_property ?v08 pwindows_domain)
-        (prop_windows_domain ?v08 ?v09)
+        (PROP_WINDOWS_DOMAIN ?v08 ?v09)
         (knows ?v08)
         (do_8_3)
         (arg_6 ?v06)
@@ -642,7 +642,7 @@
     (and
         (increase (total-cost) 1)
         (when
-            (mem_domain_user_admins ?v02 ?v07)
+            (MEM_DOMAIN_USER_ADMINS ?v02 ?v07)
             (and
                 (prop_executable ?v11 ?v04)
                 (knows_property ?v11 pexecutable)

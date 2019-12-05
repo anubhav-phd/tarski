@@ -1,4 +1,4 @@
-;; woodworking
+;; Woodworking
 ;;
 
 (define (domain woodworking)

@@ -10,11 +10,11 @@
 (:constants
     discard - cardposition
 )
-; each deal, deal-i, is represented by a list of cards where the card going to pile-0 is
-;   clear and the last card is placed on deal-i.  moreover, to-deal stores the information
-;   of on which deal each card must be placed.  to-deal and on have redundant
-;   information. this is done this way because to-deal is static, reducing the number of
-;   instantiations of the deal-card schema. on is used on top of to-deal for cards in the
+; Each deal, deal-i, is represented by a list of cards where the card going to pile-0 is
+;   clear and the last card is placed on deal-i.  Moreover, TO-DEAL stores the information
+;   of on which deal each card must be placed.  TO-DEAL and on have redundant
+;   information. This is done this way because TO-DEAL is static, reducing the number of
+;   instantiations of the deal-card schema. On is used on top of TO-DEAL for cards in the
 ;   deal so that cards are always somewhere.
 (:predicates
     (on ?c1 - card ?c2 - cardposition)
@@ -23,12 +23,12 @@
     (current-deal ?d - deal)
     ;
     ; static predicates
-    (can-continue-group ?c1 - card ?c2 - cardposition)
-    (can-be-placed-on ?c1 - card ?c2 - card)
-    (is-ace ?c - card)
-    (is-king ?c - card)
-    (next-deal ?d ?nd - deal)
-    (to-deal ?c - card ?p - tableau ?d - deal ?next - cardposition)
+    (CAN-CONTINUE-GROUP ?c1 - card ?c2 - cardposition)
+    (CAN-BE-PLACED-ON ?c1 - card ?c2 - card)
+    (IS-ACE ?c - card)
+    (IS-KING ?c - card)
+    (NEXT-DEAL ?d ?nd - deal)
+    (TO-DEAL ?c - card ?p - tableau ?d - deal ?next - cardposition)
     ;
     ; control flags for dealing
     (currently-dealing)
@@ -79,7 +79,7 @@
         (not (currently-updating-part-of-tableau))
         (not (currently-collecting-deck))
         (current-deal ?fromdeal)
-        (to-deal ?c ?totableau ?fromdeal ?from)
+        (TO-DEAL ?c ?totableau ?fromdeal ?from)
         (clear ?c)
         (on ?c ?from)
         (part-of-tableau ?to ?totableau)
@@ -95,7 +95,7 @@
         (part-of-tableau ?c ?totableau)
         (movable ?c)
         (when
-            (not (can-continue-group ?c ?to))
+            (not (CAN-CONTINUE-GROUP ?c ?to))
             (and
                 (currently-updating-unmovable)
                 (make-unmovable ?to)
@@ -115,7 +115,7 @@
         (not (currently-collecting-deck))
         (current-deal ?d)
         (clear ?d)
-        (next-deal ?d ?nd)
+        (NEXT-DEAL ?d ?nd)
     )
     :effect
     (and
@@ -139,7 +139,7 @@
         (clear ?to)
         (in-play ?to)
         (part-of-tableau ?to ?totableau)
-        (can-be-placed-on ?c ?to)
+        (CAN-BE-PLACED-ON ?c ?to)
         (on ?c ?from)
     )
     :effect
@@ -149,14 +149,14 @@
         (not (clear ?to))
         (clear ?from)
         (when
-            (not (can-continue-group ?c ?from))
+            (not (CAN-CONTINUE-GROUP ?c ?from))
             (and
                 (currently-updating-movable)
                 (make-movable ?from)
             )
         )
         (when
-            (not (can-continue-group ?c ?to))
+            (not (CAN-CONTINUE-GROUP ?c ?to))
             (and
                 (currently-updating-unmovable)
                 (make-unmovable ?to)
@@ -189,7 +189,7 @@
         (not (clear ?to))
         (clear ?from)
         (when
-            (not (can-continue-group ?c ?from))
+            (not (CAN-CONTINUE-GROUP ?c ?from))
             (and
                 (currently-updating-movable)
                 (make-movable ?from)
@@ -248,7 +248,7 @@
         (not (currently-updating-part-of-tableau))
         (on ?c ?nextcard)
         (make-unmovable ?c)
-        (can-continue-group ?c ?nextcard)
+        (CAN-CONTINUE-GROUP ?c ?nextcard)
         (movable ?nextcard)
     )
     :effect
@@ -307,7 +307,7 @@
         (not (currently-collecting-deck))
         (on ?c ?nextcard)
         (make-movable ?c)
-        (can-continue-group ?c ?nextcard)
+        (CAN-CONTINUE-GROUP ?c ?nextcard)
     )
     :effect
     (and
@@ -344,7 +344,7 @@
         (not (currently-collecting-deck))
         (on ?c ?nextcard)
         (make-movable ?c)
-        (not (can-continue-group ?c ?nextcard))
+        (not (CAN-CONTINUE-GROUP ?c ?nextcard))
     )
     :effect
     (and
@@ -364,7 +364,7 @@
         (not (currently-collecting-deck))
         (not (currently-dealing))
         (clear ?c)
-        (is-ace ?c)
+        (IS-ACE ?c)
         (in-play ?c)
     )
     :effect
@@ -388,7 +388,7 @@
         (on ?c ?nextcard)
         (in-play ?c)
         (part-of-tableau ?c ?p)
-        (can-continue-group ?c ?nextcard)
+        (CAN-CONTINUE-GROUP ?c ?nextcard)
     )
     :effect
     (and
@@ -414,7 +414,7 @@
         (not (currently-dealing))
         (on ?c ?nextcard)
         (collect-card ?c)
-        (is-king ?c)
+        (IS-KING ?c)
         (in-play ?c)
         (part-of-tableau ?c ?p)
     )

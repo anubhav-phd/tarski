@@ -1,4 +1,4 @@
-;; schedule world
+;; Schedule World
 ;;
 
 (define (domain schedule)
@@ -102,7 +102,7 @@
 	   :precondition (and (not (busy grinder))
 			      (not (scheduled ?x)))
 	   :effect (and
-		    (busy grinder)
+		    (busy GRINDER)
 		    (scheduled ?x)
 		    (surface-condition ?x smooth)
 		    (when (not (objscheduled))
@@ -158,7 +158,7 @@
 			  (has-paint spray-painter ?newpaint)
 			  (not (busy spray-painter))
 			  (not (scheduled ?x))
-			  (temperature ?x cold))
+			  (temperature ?x COLD))
 	   :effect (and
 		    (busy spray-painter)
 		    (scheduled ?x)

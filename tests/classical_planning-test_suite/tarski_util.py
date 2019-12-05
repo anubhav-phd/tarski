@@ -1,15 +1,15 @@
+#!/usr/bin/env python3
 ################################################################################
 #                                                                              #
 # Info:     Utility methods for LAPKT-Tarski integration                       #
 #                                                                              #
-# Author:   Anubhav Singh                                                      #
+# Author:   Anubhav Singh (anubhav.singh.eng@gmail.com)                        #
 #                                                                              #
 # Date:     08-Sep-2019                                                        #
 #                                                                              #
 # Dependencies:                                                                #
-# 1. pip install timers                                                        #
-# 2. pip install tarski                                                        #
-# 3. python 3.x                                                                #
+# 1. pip install tarski                                                        #
+# 2. python version - 3.x (as required by tarski)                              #
 #                                                                              #
 ################################################################################
 '''
@@ -45,8 +45,10 @@ from tarski.fstrips import (UniversalEffect, AddEffect, DelEffect,
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#
 
 
-# DEFINED CONSTANTS
+# DEFINED DEFAULT PARAMETERS
 DEFAULTCOST =   1
+VERBOSE = False
+LENIENT_MODE = False
 
 #-----------------------------------------------------------------------------#
 @contextlib.contextmanager
@@ -59,19 +61,20 @@ def time_taken( task_name: str) :
     time_taken: string - name of the task
     """
     start = ( time.time(), time.process_time())
-    #print("***Started - {} ...***".format(task_name))
+    if VERBOSE :
+        print("***Started - {} ...***".format(task_name))
     sys.stdout.flush()
     yield
-    #print(("***Finished {} after {:.3f} seconds CPU time, {:.3f} seconds "+
-    #        "wall-clock time***\n").format( task_name, time.time()-start[0],
-    #            time.process_time()-start[1] ))
+    if VERBOSE :
+        print(("***Finished {} after {:.3f} seconds CPU time, {:.3f} seconds "+
+            "wall-clock time***\n").format( task_name, time.time()-start[0],
+                time.process_time()-start[1] ))
     sys.stdout.flush()
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#
 
-
-
 #-----------------------------------------------------------------------------#
-def ground_generate_task( domain_file, problem_file, out_task=None) :
+def ground_generate_task( domain_file, problem_file, out_task=None, 
+        verbose_flag=False, lenient_flag=False) :
     """
     Uses Tarski Grounder to generate the output task using pddl
 
@@ -85,18 +88,24 @@ def ground_generate_task( domain_file, problem_file, out_task=None) :
     =======
     None
     """
-
+    global VERBOSE 
+    VERBOSE = verbose_flag
+    global LENIENT_MODE 
+    LENIENT_MODE = lenient_flag
     parsing_timer   =   time.process_time()
     #Setup a reader to read the domain and problem pddl files
     with time_taken( "reading and parsing pddl file") :
-        problem = FstripsReader( raise_on_error=True,
+        if LENIENT_MODE :
+            problem = FstripsReader( raise_on_error=True,
+                theories=None, strict_with_requirements=False).\
+            read_problem( domain_file, problem_file)
+        else :
+            problem = FstripsReader( raise_on_error=True,
                 theories=None).\
-        read_problem( domain_file, problem_file)
-    """
-    # Eliminate Universal Effects and Quantifiers by transformation
-    with time_taken("finding static predicates") :
-        problem.fluent_preds = find_fluent_predicates( problem)
-    """
+            read_problem( domain_file, problem_file)
+        
+        
+
     with time_taken( "preprocessing tarski problem") :
         process_problem( problem)
         init = problem.init_bk
@@ -110,7 +119,8 @@ def ground_generate_task( domain_file, problem_file, out_task=None) :
         for x, y in reachable_action_params.items() :
             for z in y :
                 count_params += 1
-        #print("Total number of reachable action params = ", count_params)
+        if VERBOSE : 
+            print("Total number of reachable action params = ", count_params)
 
     return True
 #xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx#
@@ -233,16 +243,10 @@ def process_formula( formula, lang) :
     =======
     Transformed formula
     """
-    # Anu :  Added dnf check to flag formulas which may require DNF
-    formula.dnf_check = False
     if isinstance( formula, CompoundFormula) :
         sub_f   =   []
-        if formula.connective==Connective.Or :
-            formula.dnf_check   =   True
         for f in formula.subformulas :
             sub_f.append( process_formula( f, lang))
-            if f.dnf_check==True :
-                formula.dnf_check = True
         formula.subformulas =   sub_f
         return formula
     elif isinstance( formula, QuantifiedFormula) :

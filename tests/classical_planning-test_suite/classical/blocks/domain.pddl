@@ -1,8 +1,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; 4 op-blocks world
+;;; 4 Op-blocks world
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (domain blocks)
+(define (domain BLOCKS)
   (:requirements :strips)
   (:predicates (on ?x ?y)
 	       (ontable ?x)

@@ -5,7 +5,7 @@
 )
 (:predicates
     ;up down left right of a field
-    (isadjacent ?x ?y)
+    (ISADJACENT ?x ?y)
     ;the last field of the snake
     (tailsnake ?x)
     ;the first field of the snake
@@ -17,7 +17,7 @@
     ;next point that will spawn
     (spawn ?x)
     ;point y will spawn after point x
-    (nextspawn ?x ?y)
+    (NEXTSPAWN ?x ?y)
     ;a field that has a point that can be collected by the snake
     (ispoint ?x)
 )
@@ -26,7 +26,7 @@
     :precondition
     (and
         (headsnake ?head)
-        (isadjacent ?head ?newhead)
+        (ISADJACENT ?head ?newhead)
         (tailsnake ?tail)
         (nextsnake ?newtail ?tail)
         (not (blocked ?newhead))
@@ -50,11 +50,11 @@
     :precondition
     (and
         (headsnake ?head)
-        (isadjacent ?head ?newhead)
+        (ISADJACENT ?head ?newhead)
         (not (blocked ?newhead))
         (ispoint ?newhead)
         (spawn ?spawnpoint)
-        (nextspawn ?spawnpoint ?nextspawnpoint)
+        (NEXTSPAWN ?spawnpoint ?nextspawnpoint)
         (not (= ?spawnpoint dummypoint))
     )
     :effect
@@ -75,7 +75,7 @@
     :precondition
     (and
         (headsnake ?head)
-        (isadjacent ?head ?newhead)
+        (ISADJACENT ?head ?newhead)
         (not (blocked ?newhead))
         (ispoint ?newhead)
         (spawn dummypoint)

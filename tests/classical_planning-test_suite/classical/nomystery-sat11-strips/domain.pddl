@@ -17,7 +17,7 @@
 (:functions 
 (total-cost) - number)
 
-(:action load
+(:action LOAD
 :parameters
 (?p - package
 ?t - truck
@@ -28,7 +28,7 @@
 (and (not (at ?p ?l)) (in ?p ?t) (increase (total-cost) 1))
 )
 
-(:action unload
+(:action UNLOAD
 :parameters
 (?p - package
 ?t - truck
@@ -39,7 +39,7 @@
 (and (at ?p ?l) (not (in ?p ?t)) (increase (total-cost) 1))
 )
 
-(:action drive
+(:action DRIVE
 :parameters
 (?t - truck
 ?l1 - location

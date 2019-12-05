@@ -1,7 +1,7 @@
-; ipc5 domain: storage propositional
-; authors: alfonso gerevini and alessandro saetti 
+; IPC5 Domain: Storage Propositional
+; Authors: Alfonso Gerevini and Alessandro Saetti 
 
-(define (domain storage-propositional)
+(define (domain Storage-Propositional)
 (:requirements :typing)
 (:types hoist surface place area - object
 	container depot - place

@@ -1,4 +1,4 @@
-;; transport sequential
+;; Transport sequential
 ;;
 
 (define (domain transport)
