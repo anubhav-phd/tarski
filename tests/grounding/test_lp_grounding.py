@@ -4,11 +4,12 @@ import pytest
 from tarski.grounding import LPGroundingStrategy, NaiveGroundingStrategy
 from tarski.grounding.errors import ReachabilityLPUnsolvable
 from tarski.grounding.lp_grounding import compute_action_groundings
+from tarski.reachability import create_reachability_lp
 from tarski.syntax import neg
 
 from tests.common.gripper import create_sample_problem
 from tests.common.simple import create_simple_problem
-from ..io.common import reader, collect_strips_benchmarks, collect_fstrips_benchmarks
+from ..io.common import reader, collect_strips_benchmarks
 
 if shutil.which("gringo") is None:
     pytest.skip('Install the Clingo ASP solver and put the "gringo" binary on your PATH in order to test ASP-based '
@@ -85,20 +86,28 @@ def test_action_grounding_on_standard_benchmarks(instance_file, domain_file):
 
 def test_ground_actions_for_small_gripper():
     problem = create_sample_problem()
+
+    # First try with the variable-only grounding strategy
+    varonly_grounding = LPGroundingStrategy(problem, ground_actions=False)
+    varonly_variables = varonly_grounding.ground_state_variables()
+    assert len(varonly_variables) == 20
+
+    # Now try full LP grounding
     grounding = LPGroundingStrategy(problem)
     actions = grounding.ground_actions()
 
     assert len(actions['pick']) == len(actions['drop']) == 16  # 4 balls, two rooms, two grippers
     assert len(actions['move']) == 2  # 2 rooms
 
-    as_list2 = lambda symbols: sorted(map(str, symbols))
     lpvariables = grounding.ground_state_variables()
     assert len(lpvariables) == 20
+    # Check both grounding methods produce same set of ground variables
+    assert set(lpvariables) == set(varonly_variables)
 
     grounding = NaiveGroundingStrategy(problem)
     naive_variables = grounding.ground_state_variables()
     # The naive grounding strategy will result in many unreachable state variables such as 'carry(left,left)'
-    assert len(set(as_list2(naive_variables)) - set(as_list2(lpvariables))) == 124
+    assert len(set(naive_variables) - set(lpvariables)) == 124
 
 
 def test_ground_actions_on_negated_preconditions():
@@ -131,5 +140,40 @@ def test_ground_actions_on_negated_preconditions2():
     # If the goal is now "p(a)", the whole problem becomes relaxed unreachable
     problem.goal = p(a)
     with pytest.raises(ReachabilityLPUnsolvable):
-        actions = compute_action_groundings(problem)
+        _ = compute_action_groundings(problem)
 
+
+def test_action_grounding_on_orgsynth():
+    # Regression test for issue #82
+    problem = generate_strips_problem("organic-synthesis-opt18-strips:p01.pddl")
+
+    lp, tr = create_reachability_lp(problem, ground_actions=False)
+    ruleset = set(lp.rules)
+    assert 'type_object(X) :- chemical_atom(X).' not in ruleset
+    assert 'type_object(X) :- type_chemical_atom(X).' in ruleset
+
+
+def test_ignore_unused_types():
+    # Regression test for issue #83
+    problem = create_sample_problem()
+    lp, tr = create_reachability_lp(problem, ground_actions=False)
+    ruleset = set(lp.rules)
+
+    # Now add an empty type and check that the set of LP rules is exactly the same, i.e. the type is ignored
+    problem.language.sort('empty_type')
+    lp, tr = create_reachability_lp(problem, ground_actions=False)
+    ruleset2 = set(lp.rules)
+    assert ruleset == ruleset2
+
+    problem = generate_strips_problem("organic-synthesis-opt18-strips:p01.pddl")
+    lp, tr = create_reachability_lp(problem, ground_actions=True)
+    ruleset = set(lp.rules)
+    assert not any(s.startswith("action_oxidationofborane") for s in ruleset)
+
+    actions = compute_action_groundings(problem)
+    assert actions['oxidationofborane'] == set()
+
+
+def generate_strips_problem(tag):
+    instance_file, domain_file = collect_strips_benchmarks([tag])[0]
+    return reader().read_problem(domain_file, instance_file)
