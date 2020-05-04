@@ -45,8 +45,8 @@ class SortMismatch(SyntacticError):
 
 
 class DuplicateDefinition(SyntacticError):
-    def __init__(self, name, other, msg=None):
-        msg = msg or 'Duplicate definition of element "{}": "{}"'.format(name, other)
+    def __init__(self, name, other=None, msg=None):
+        msg = msg or f'Duplicate definition of element "{name}"'
         super().__init__(msg)
         self.name = name
         self.other = other
@@ -67,6 +67,10 @@ class UnexpectedElementType(SyntacticError):
 
 
 class DuplicateSortDefinition(DuplicateDefinition):
+    pass
+
+
+class DuplicateTheoryDefinition(DuplicateDefinition):
     pass
 
 
@@ -145,6 +149,14 @@ class CommandNotFoundError(TarskiError):
 
 
 class ExternalCommandError(TarskiError):
+    pass
+
+
+class OutOfMemoryError(TarskiError):
+    pass
+
+
+class OutOfTimeError(TarskiError):
     pass
 
 

@@ -5,7 +5,7 @@ from ...syntax import QuantifiedFormula, Quantifier, create_substitution
 from ...syntax.transform import TermSubstitution, NegatedBuiltinAbsorption, CNFTransformation,\
     QuantifierEliminationMode, remove_quantifiers
 from ...syntax.ops import all_variables
-from ...util import IndexDictionary
+from ...util import SymbolIndex
 from . import instantiation
 from .elements import process_expression
 
@@ -16,7 +16,7 @@ class ConstraintGrounder:
         self.problem = prob
         self.L = self.problem.language
         self.index = index
-        self.problem.ground_constraints = IndexDictionary()
+        self.problem.ground_constraints = SymbolIndex()
         self.schemas = list(self.problem.constraints)
         self.constraints_generated = 0
 
@@ -31,7 +31,7 @@ class ConstraintGrounder:
             K, syms, substs = instantiation.enumerate_groundings(all_variables(const_schema))
             for values in itertools.product(*substs):
                 subst = create_substitution(syms, values)
-                op = TermSubstitution(self.L, subst)
+                op = TermSubstitution(subst)
                 g_const = process_expression(self.L, const_schema, op)
                 # Simplification steps
                 s0 = NegatedBuiltinAbsorption.rewrite(self.L, g_const)

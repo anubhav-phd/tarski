@@ -6,6 +6,7 @@ from tarski.grounding.errors import ReachabilityLPUnsolvable
 from tarski.grounding.lp_grounding import compute_action_groundings
 from tarski.reachability import create_reachability_lp
 from tarski.syntax import neg
+from tests.common.benchmarks import get_lenient_benchmarks
 
 from tests.common.gripper import create_sample_problem
 from tests.common.simple import create_simple_problem
@@ -17,6 +18,7 @@ if shutil.which("gringo") is None:
 
 
 SAMPLE_STRIPS_INSTANCES = [
+    "organic-synthesis-opt18-strips:p01.pddl",
     "blocks:probBLOCKS-4-1.pddl",
     "openstacks:p01.pddl",
     "visitall-sat11-strips:problem12.pddl",
@@ -25,16 +27,12 @@ SAMPLE_STRIPS_INSTANCES = [
     "pipesworld-notankage:p01-net1-b6-g2.pddl",
     "pipesworld-tankage:p01-net1-b6-g2-t50.pddl",
     "pathways:p01.pddl",
+    "ged-opt14-strips:d-1-2.pddl",
 
     # Buggy domains that will raise some parsing exception:
     # "storage:p01.pddl", # type "area" is declared twice
     # "tidybot-opt11-strips:p01.pddl",  # "cart" used both as type name and object name, which we don't support
-    # "ged-opt14-strips:d-1-2.pddl",  # "DEFINE" used in caps. The PDDL grammar doesn't mention it is case-insensitive
 ]
-
-# Domains that require non-strict PDDL parsing because of missing requirement flags or similar that would
-# otherwise result in a parsing error
-LENIENT_DOMAINS = ['floortile-opt11-strips']
 
 
 def pytest_generate_tests(metafunc):
@@ -50,9 +48,10 @@ def pytest_generate_tests(metafunc):
 
 
 def test_action_grounding_on_standard_benchmarks(instance_file, domain_file):
-    lenient = any(d in domain_file for d in LENIENT_DOMAINS)
+    lenient = any(d in domain_file for d in get_lenient_benchmarks())
 
-    problem = reader(strict_with_requirements=not lenient).read_problem(domain_file, instance_file)
+    reader_ = reader(strict_with_requirements=not lenient, case_insensitive=lenient)
+    problem = reader_.read_problem(domain_file, instance_file)
     grounder = LPGroundingStrategy(problem)
     actions = grounder.ground_actions()
 
@@ -70,13 +69,33 @@ def test_action_grounding_on_standard_benchmarks(instance_file, domain_file):
                 'BlackPrinter-Simplex-Letter': 2, 'BlackPrinter-SimplexAndInvert-Letter': 2, 'Up-MoveTop-Letter': 1,
                 'Up-MoveUp-Letter': 1, 'Finisher1-PassThrough-Letter': 1, 'Finisher1-Stack-Letter': 1,
                 'Finisher2-PassThrough-Letter': 1, 'Finisher2-Stack-Letter': 1},
-        'floor-tile': {'change-color': 8, 'paint-up': 36, 'paint-down': 36, 'up': 27, 'down': 27, 'right': 24,
-                       'left': 24},
+        'floor-tile': {'change-color': 8, 'paint-up': 36, 'paint-down': 36, 'up': 18, 'down': 18, 'right': 16,
+                       'left': 16},
         # This works for both versions of pipesworld:
         "pipesworld_strips": {'PUSH-START': 0, 'PUSH-END': 0, 'POP-START': 0, 'POP-END': 0,
                               'PUSH-UNITARYPIPE': 64, 'POP-UNITARYPIPE': 64},
         'Pathways-Propositional': {'choose': 48, 'initialize': 16, 'associate': 7, 'associate-with-catalyze': 5,
                                    'synthesize': 0, 'DUMMY-ACTION-1': 1},
+        'organic-synthesis': {'additionofrohacrossgemdisubstitutedalkene': 448,
+                              'additionofrohacrossmonosubstitutedalkene': 192,
+                              'additionofrohacrosstetrasubstitutedalkene': 72,
+                              'additionofrohacrosstrisubstitutedalkene': 120,
+                              'additionofrohacrossvicdisubstitutedalkene': 72,
+                              'etherformationbysulfonatedisplacement': 0,
+                              'hydroborationofdiortrisubstitutedalkene': 0,
+                              'hydroborationofgemdisubstitutedalkene': 0,
+                              'hydroborationofmonosubstitutedalkene': 0,
+                              'hydroborationoftetrasubstitutedalkene': 0,
+                              'oxidationofborane': 0,
+                              'sulfonylationofalcohol': 0},
+        'genome-edit-distance': {'begin-cut': 9, 'continue-cut': 9, 'end-cut-1': 9, 'end-cut-2': 9,
+                                 'begin-transpose-splice': 9, 'continue-splice-1': 9, 'continue-splice-2': 9,
+                                 'end-splice-1': 9, 'end-splice-2': 9, 'begin-transverse-splice': 9,
+                                 'begin-inverse-splice': 9, 'begin-inverse-splice-special-case': 3,
+                                 'continue-inverse-splice-1A': 9, 'continue-inverse-splice-1B': 9,
+                                 'continue-inverse-splice-2': 9, 'end-inverse-splice-1A': 9, 'end-inverse-splice-1B': 9,
+                                 'end-inverse-splice-2': 9, 'invert-single-gene-A': 3, 'invert-single-gene-B': 3,
+                                 'reset-1': 3}
     }[problem.domain_name]
 
     # Make sure that the number of possible groundings of each action schema in the domain is as expected

@@ -2,7 +2,7 @@
 from typing import Tuple
 
 from .util import termlists_are_equal, termlist_hash
-from .sorts import Sort, parent
+from .sorts import Sort, parent, Interval
 from .. import errors as err
 from .builtins import BuiltinPredicateSymbol, BuiltinFunctionSymbol
 
@@ -140,8 +140,6 @@ class Variable(Term):
     def __init__(self, symbol: str, sort: Sort):
         self.symbol = symbol
         self._sort = sort
-        self.sort.language.language_components_frozen = True
-        # TODO VALIDATE
 
     @property
     def language(self):
@@ -190,7 +188,6 @@ class CompoundTerm(Term):
                     raise err.SortMismatch(self.symbol, subterms[k], s)
                 processed_st.append(s_k)
         self.subterms = tuple(processed_st)
-        self.symbol.language.language_components_frozen = True
 
     @property
     def language(self):
@@ -279,8 +276,6 @@ class IfThenElse(Term):
 
         self.subterms = tuple(subterms)
 
-        self.symbol.language.language_components_frozen = True
-
     @property
     def language(self):
         return self.symbol.language
@@ -312,13 +307,12 @@ class Constant(Term):
     def __init__(self, name, sort: Sort):
         self.name = name
         self._sort = sort
-        # symbol validation
-        if not self._sort.builtin:
-            # construction of constants extends the domain of sorts
-            self._sort.extend(self)
+
+        if isinstance(sort, Interval):
+            self.name = sort.cast(self.name)
         else:
-            self.name = self._sort.cast(self.name)
-        self.sort.language.language_components_frozen = True
+            # If the sort is an enumerated type, constructing a new constant extends its domain
+            sort.extend(self)
 
     @property
     def symbol(self):

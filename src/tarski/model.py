@@ -1,4 +1,3 @@
-
 from . import errors as err
 from .syntax import Function, Constant, CompoundTerm, symref
 from .syntax.predicate import Predicate
@@ -41,8 +40,8 @@ def _check_assignment(fun, point, value=None):
 class Model:
     """ A First Order Language Model """
 
-    def __init__(self, language):
-        self.evaluator = None
+    def __init__(self, language, evaluator=None):
+        self.evaluator = evaluator
         self.language = language
         self.function_extensions = dict()
         self.predicate_extensions = dict()
@@ -65,10 +64,16 @@ class Model:
 
     def set(self, fun, *args):
         """ Set the value of fun(args[:-1]) to be args[-1] for the current interpretation """
-        # TODO: Deprecate in favor of Model.set()
+        # TODO: Deprecate in favor of Model.setx()
         self.setx(fun(*args[:-1]), args[-1])
 
-    def add(self, predicate: Predicate, *args):
+    def add(self, predicate, *args):
+        """ """
+        from .syntax import Atom
+        if isinstance(predicate, Atom):
+            args = predicate.subterms
+            predicate = predicate.predicate
+
         if not isinstance(predicate, Predicate):
             raise err.SemanticError("Model.add() can only set the value of predicate symbols")
         if predicate.builtin:
@@ -88,7 +93,7 @@ class Model:
     def holds(self, predicate: Predicate, point):
         """ Return true iff the given predicate is true on the given point in the current model """
         return predicate.signature in self.predicate_extensions and \
-               wrap_tuple(point) in self.predicate_extensions[predicate.signature]
+            wrap_tuple(point) in self.predicate_extensions[predicate.signature]
 
     def list_all_extensions(self):
         """ Return a mapping between predicate and function signatures and a list of all their respective extensions.
@@ -127,6 +132,15 @@ class Model:
 
         return atoms
 
+    def get_extension(self, symbol):
+        """ Return the extension of the given (predicate or function) symbol in the
+         current model. """
+        if isinstance(symbol, Predicate):
+            return self.predicate_extensions.get(symbol.signature, set())
+
+        # else we must have a function
+        return self.function_extensions.get(symbol.signature, ExtensionalFunctionDefinition())
+
     def __getitem__(self, arg):
         if self.evaluator is None:
             raise ModelWithoutEvaluatorError(arg)
@@ -138,9 +152,16 @@ class Model:
             # MRJ: This for expressions that have the __getitem__ operator overloaded
             return self.evaluator(arg, self)
 
+    def __str__(self):
+        npreds = len(self.predicate_extensions)
+        nfuns = len(self.function_extensions)
+        return f'Model(num_predicates="{npreds}", num_functions="{nfuns}")'
+    __repr__ = __str__
 
-def create(lang):
-    return Model(lang)
+
+def create(lang, evaluator=None):
+    """ Create a Tarski model with given evaluator. """
+    return Model(lang, evaluator)
 
 
 class ExtensionalFunctionDefinition:
@@ -158,9 +179,12 @@ class ExtensionalFunctionDefinition:
     def __len__(self):
         return len(self.data)
 
+    def __iter__(self):
+        yield from self.data.items()
 
 # class IntensionalFunctionDefinition:
 #     pass
+
 
 def wrap_tuple(tup):
     """ Create a tuple of Term references from a tuple of terms """

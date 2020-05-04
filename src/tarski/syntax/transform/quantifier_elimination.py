@@ -59,14 +59,14 @@ class QuantifierElimination:
         return phi
 
     def _expand(self, phi: QuantifiedFormula, creator):
-        from tarski.grounding.naive import instantiation
+        from ...grounding.naive import instantiation
         card, syms, substs = instantiation.enumerate_groundings(phi.variables)
         if card == 0:
             raise TransformationError("quantifier elimination", phi, "No constants were defined!")
         conjuncts = []
         for values in itertools.product(*substs):
             subst = create_substitution(syms, values)
-            conjuncts.append(term_substitution(self.lang, phi.formula, subst))
+            conjuncts.append(term_substitution(phi.formula, subst))
         return creator(*conjuncts)
 
     def convert(self):

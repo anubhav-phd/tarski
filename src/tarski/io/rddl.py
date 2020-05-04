@@ -3,8 +3,7 @@
 """
 from enum import Enum
 
-from pyrddl.parser import RDDLParser
-
+from .. import modules
 from .common import load_tpl
 from ..fol import FirstOrderLanguage
 from ..syntax import implies, land, lor, neg, Connective, Quantifier, CompoundTerm, Interval, Atom, IfThenElse, \
@@ -222,7 +221,7 @@ class Reader:
     def _load_rddl_model(filename):
         with open(filename, 'r') as input_file:
             rddl = input_file.read()
-        parser = RDDLParser()
+        parser = modules.import_pyrddl_parser()()
         parser.build()
         # parse RDDL
         return parser.parse(rddl)
@@ -444,7 +443,7 @@ class Writer:
         return ', '.join([str(r) for r in self.task.requirements])
 
     def get_types(self):
-        from tarski.syntax.sorts import parent
+        from ..syntax.sorts import parent
         type_decl_list = []
         for S in self.task.L.sorts:
             if S.builtin or S.name == 'object':

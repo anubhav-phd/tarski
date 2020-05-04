@@ -5,22 +5,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+
+### Added
+### Removed
+### Deprecated
+### Fixed
+
+
+## [0.5.1] - 2020-04-17
+### Fixed
+  - Fixed some silly releasing mistakes... through a new release :-)
+
+
+## [0.5.0] - 2020-04-17
+### Changed
+
+### Added
+  - Improved documentation (still work in progress though).
+  - Added methods to simplify problems, actions, logical expressions based on evaluation
+  of static atoms and terms.
+  - Added method to compile away negated literals in action preconditions, action effect conditions
+  and goal, using the standard mechanism of creating additional predicates.
+  - Almost all benchmarks from the IPC competitions 2008, 2011, 2014, 2018 are now correctly parsed by Tarski.
+  The unit tests also make sure this keeps being true. The only domain that Tarski cannot parse
+  correctly is Tidybot, where "cart" is used both as type name and object name. This does not bode well with 
+  the assumptions made in Tarski first-order languages. Problems from domains Floortile and GED need to be parsed
+  with caution as well, by using, respectively, the parser options `strict_with_requirements=False` and
+  `case_insensitive=True`, since the first one uses action costs without declaring them in the "requirements" section,
+  whereas the second one uses lowercase in the domain file, and uppercase in the instance file.
+  - Improved support for representation and parsing of action costs. 
+  - Added methods to check applicability of an action in a state (model) and to progress a state through an action. 
+  - Added some methods to the `fstrips.representation` module to check and compute delete-free relaxations of problems.
+  - Modularize Tarski dependencies so that the use and  installation of numpy, scipy, etc. is optional.
+  - Generation of action schema CSPs.
+  
+### Removed
+### Deprecated
+### Fixed
+
+
+## [0.4.0] - 2019-12-28
+### Changed
 - Almost-identical methods `approximate_symbol_fluency` and `classify_symbols` have been merged into one
   single method `approximate_symbol_fluency`.
 
 ### Added
  - Preliminary [readthedocs documentation](https://tarski.readthedocs.io) integrated in the repository.
    CI tests the documentation build as well.
+ - Integration with the [PySDD package](https://github.com/wannesm/PySDD) for sentential decision diagrams
+ to process action schema preconditions.
  - Implementation of a `project_away_effect_free_variables_from_problem` transformation that for each action schema
    compiles into existential variables all action parameters that are not used in the action effects
     ([#63](https://github.com/aig-upf/tarski/issues/63)).
+ - Implementation of a `compile_universal_effects_away` transformation that expands universal effects in actions. 
+ - Reachability module now processes problems with cost-related functions (010d79df)
  - Preliminary implementation of a library of benchmark generators
     ([#43](https://github.com/aig-upf/tarski/issues/43)).
+ - Added some preliminary support for the NDL representation language.
 
 ### Removed
 ### Deprecated
 ### Fixed
  - Fixed some minor bugs in FSTRIPS writer.
+ - Fixed bug in ReachabilityLPCompiler when problem has an action and a predicate with the same name (7e9a684).
+ - Remove temporary files created by the LP based grounder.
+ - Model.list_all_extensions now returns empty extensions if necessary (ffbc96d1)
+
 
 ## [0.3.0] - 2019-08-03
 

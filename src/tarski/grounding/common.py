@@ -1,16 +1,22 @@
-
+from ..errors import TarskiError
 from ..syntax import Predicate, Function, Constant, termlists_are_equal, termlist_hash
 
 
 class StateVariableLite:
-    """ A state variable is nothing else than a CompoundTerm or Atom which is expected to change its
-    value, along with a particular instantiation of its subterms.
+    """ A state variable is a ground CompoundTerm or Atom which can possibly change its value along the execution of a
+    plan. The set of all state variables of a problem makes up all information necessary to represent a state.
+    State variables are different to static atoms, whose truth value can be proven to remain the same.
+    This proof can be based on simple techniques such as looking at the effects of actions, or on more sophisticated
+    reachability analyses.
+
+    Note that we could use the CompoundTerm or Atom classes to represent the same concept represented by a
+    StateVariableLite, but currently we prefer to use a single class, hence the existence of StateVariableLite.
     Note: This is a lightweight version of the StateVariable class above, hoping that it can eventually replace it.
     """
 
     def __init__(self, symbol, binding):
-        assert isinstance(symbol, (Predicate, Function))
-        assert all(isinstance(c, Constant) for c in binding)
+        if not isinstance(symbol, (Predicate, Function)) or not all(isinstance(c, Constant) for c in binding):
+            raise TarskiError(f"Cannot build state variable from {symbol} and {binding}")
         self.symbol = symbol
         self.binding = binding
 
@@ -28,3 +34,6 @@ class StateVariableLite:
     @staticmethod
     def from_atom(atom):
         return StateVariableLite(atom.predicate, atom.subterms)
+
+    def to_atom(self):
+        return self.symbol(*self.binding)

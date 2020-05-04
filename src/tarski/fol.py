@@ -7,13 +7,14 @@ from typing import Union
 from . import errors as err
 from .syntax import Function, Constant, Variable, Sort, inclusion_closure, Predicate, Interval
 from .syntax.algebra import Matrix
+from . import modules
 
 
 class FirstOrderLanguage:
-    """ A full-fledged many-sorted first-order language """
+    """ A many-sorted first-order language. """
 
-    def __init__(self, name='Tarski FOL'):
-        self.name = name
+    def __init__(self, name=None):
+        self.name = name or 'anonymous'
         self._sorts = {}
 
         # A mapping between each sort and its single immediate parent
@@ -32,8 +33,7 @@ class FirstOrderLanguage:
                                     Function: self._functions,
                                     Predicate: self._predicates}
 
-        self.language_components_frozen = False
-        self.theories = []
+        self.theories = set()
 
         self._attach_object_sort()
 
@@ -53,15 +53,15 @@ class FirstOrderLanguage:
 
     @property
     def sorts(self):
-        return self._sorts.values()
+        return list(self._sorts.values())
 
     @property
     def predicates(self):
-        return self._predicates.values()
+        return list(self._predicates.values())
 
     @property
     def functions(self):
-        return self._functions.values()
+        return list(self._functions.values())
 
     def _attach_object_sort(self):
         """ The `object` sort, being the root of the sort hierarchy, needs a special treatment"""
@@ -73,32 +73,36 @@ class FirstOrderLanguage:
 
     @property
     def Object(self):
-        """ A shorthand accessor. """
+        """ A shorthand accessor for the object sort. """
         return self._sorts['object']
 
     @property
     def Real(self):
-        """ A shorthand accessor. """
+        """ A shorthand accessor for the Real sort. """
         return self.get_sort('Real')
 
     @property
     def Integer(self):
-        """ A shorthand accessor. """
+        """ A shorthand accessor for the Integer sort. """
         return self.get_sort('Integer')
 
     @property
     def Natural(self):
-        """ A shorthand accessor. """
+        """ A shorthand accessor for the Natural sort. """
         return self.get_sort('Natural')
 
-    def sort(self, name: str, parent: Union[Sort, str, None] = None):
-        """
-            Create new sort with given name and parent sort. The parent sort can be given as a Sort object or as its
-            name, if a Sort with that name has already been registered.
-            If no parent is specified, the "object" sort is assumed as parent.
+    @property
+    def Boolean(self):
+        """ A shorthand accessor for the Boolean sort. """
+        return self.get_sort('Boolean')
 
-            Raises err.DuplicateSortDefinition if a sort with the same name already existed,
-             or err.DuplicateDefinition if some non-sort element with the same name already existed.
+    def sort(self, name: str, parent: Union[Sort, str, None] = None):
+        """ Create new sort with given name and parent sort. The parent sort can be given as a Sort object or as its
+        name, if a Sort with that name has already been registered.
+        If no parent is specified, the "object" sort is assumed as parent.
+
+        :raises err.DuplicateSortDefinition: if a sort with the same name already existed.
+        :raises err.DuplicateDefinition: f some non-sort element with the same name already existed.
         """
         parent = self.get_sort("object") if parent is None else self._retrieve_sort(parent)
         return self.attach_sort(Sort(name, self), parent)
@@ -124,7 +128,7 @@ class FirstOrderLanguage:
             raise err.UndefinedSort(name)
         return self._sorts[name]
 
-    def interval(self, name, parent: Interval, lower_bound=None, upper_bound=None):
+    def interval(self, name, parent: Interval, lower_bound, upper_bound):
         """ Create a (bound) interval sort.
 
         We allow only the new sort to derive from the built-in natural, integer or real sorts.
@@ -132,15 +136,15 @@ class FirstOrderLanguage:
         self._check_name_not_defined(name, self._sorts, err.DuplicateSortDefinition)
 
         if parent not in (self.Real, self.Natural, self.Integer):
-            raise err.SemanticError("Cannot create interval that does not subclass one of "
-                                    "the real, integer or natural sort")
+            raise err.SemanticError("Only intervals derived or real, integer or naturals are allowed")
+
+        # if (lower_bound is None) != (upper_bound is None):
+        #     raise err.SemanticError("Either set both interval bounds or set none")
 
         if upper_bound <= lower_bound:
-            raise err.SemanticError("Cannot create interval where the upper bound is greater or "
-                                    "equal than the lower bound")
+            raise err.SemanticError("Cannot create interval with upper bound is <= than the lower bound")
 
         sort = Interval(name, self, parent.encode, lower_bound, upper_bound)
-        sort.builtin = parent.builtin
         self._sorts[name] = sort
         self._global_index[name] = sort
 
@@ -197,8 +201,8 @@ class FirstOrderLanguage:
 
         if sort.builtin:
             if sort.cast(name) is None:
-                raise err.SemanticError("Cannot create constant with sort '{}' from '{}' of Python type '{}'".
-                                        format(sort.name, name, type(name)))
+                raise err.SemanticError(
+                    f"Cannot create constant with sort '{sort.name}' from '{name}' of Python type '{type(name)}'")
 
             # MRJ: if name is a Python primitive type literal that can be interpreted as the underlying
             # type of the built in sort, we return a Constant object.
@@ -227,7 +231,7 @@ class FirstOrderLanguage:
 
     @staticmethod
     def vector(arraylike, sort: Sort):
-        import numpy as np
+        np = modules.import_numpy()
         return Matrix(np.reshape(arraylike, (len(arraylike), 1)), sort)
 
     @staticmethod
@@ -313,8 +317,9 @@ class FirstOrderLanguage:
         return self.is_subtype(t1, t2) or self.is_subtype(t2, t1)
 
     def __str__(self):
-        return "{}: Tarski language with {} sorts, {} function symbols, {} predicate symbols".format(
-            self.name, len(self._sorts), len(self._functions), len(self._predicates))
+        return f"{self.name}: Tarski language with {len(self._sorts)} sorts, {len(self._predicates)} predicates, " \
+               f"{len(self._functions)} functions and {len(self.constants())} constants"
+    __repr__ = __str__
 
     def register_operator_handler(self, operator, t1, t2, handler):
         self._operators[(operator, t1, t2)] = handler
@@ -341,6 +346,7 @@ class FirstOrderLanguage:
         """ Return the language element with given name(s).
         This can be a predicate or function symbol, including constants, or a sort name.
         Multiple names can be used to get different elements in one single call:
+
             >>> lang = FirstOrderLanguage()
             >>> lang.predicate('on', lang.get_sort('object'))
             >>> lang.function('loc', lang.get_sort('object'), lang.get_sort('object'))
@@ -361,14 +367,15 @@ class FirstOrderLanguage:
 
     @property
     def ns(self):
-        """ A helper to be able to access the FOL symbols in an elegant and easy manner, to be used e.g. as in:
+        """ A helper to access the FOL symbols in an elegant and easy manner, to be used e.g. as in:
+
             >>> lang = FirstOrderLanguage()
             >>> lang.predicate('on', lang.get_sort('object'))
             >>> print(f'The predicate object "on" is: {lang.ns.on}')
 
-            The overall idea is that the `ns` attribute (for "namespace") encapsulates access to only the symbols
-            in the first-order language (sorts, predicate and function symbols, including constants),
-            and nothing else (that is, it knows nothing about other class methods and attributes).
+        The overall idea is that the `ns` attribute (for "namespace") encapsulates access to only the symbols
+        in the first-order language (sorts, predicate and function symbols, including constants),
+        and nothing else (that is, it knows nothing about other class methods and attributes).
         """
         return _NamespaceAccessor(self)
 

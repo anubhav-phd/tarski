@@ -32,7 +32,7 @@ class PrenexTransformation:
                     subst[y] = y2
                     new_variables[(y2.symbol, y2.sort.name)] = y2
         if len(subst) > 0:
-            rhs.formula = term_substitution(self.L, rhs.formula, subst, inplace=True)
+            rhs.formula = term_substitution(rhs.formula, subst, inplace=True)
         new_phi = QuantifiedFormula(lhs.quantifier, list(new_variables.values()), lor(lhs.formula, rhs.formula))
         return new_phi
 
@@ -53,7 +53,7 @@ class PrenexTransformation:
                 subst[symref(y)] = y2
                 new_out_vars.append(y2)
         if len(subst) > 0:
-            term_substitution(self.L, out_phi, subst, inplace=True)
+            term_substitution(out_phi, subst, inplace=True)
         phi = CompoundFormula(conn, tuple([lhs, rhs]))
         inner = QuantifiedFormula(inner_q, inner_vars, phi)
         return QuantifiedFormula(out_q, new_out_vars, inner)
@@ -125,7 +125,7 @@ class PrenexTransformation:
         phi.formula = self._convert(phi.formula)
         if isinstance(phi.formula, QuantifiedFormula):
             if phi.formula.quantifier == phi.quantifier:  # absorb
-                new_variables = [x for x in phi.variables]
+                new_variables = list(phi.variables)
                 for x in phi.formula.variables:
                     new_variables.append(x)
                 phi.formula.variables = tuple(new_variables)

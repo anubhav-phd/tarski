@@ -1,4 +1,6 @@
+import itertools
 from typing import Generator, Set
+
 from .. import errors as err
 
 
@@ -66,8 +68,8 @@ class Sort:
 
 
 class Interval(Sort):
-    def __init__(self, name, lang, encode_fn, lower_bound=None, upper_bound=None):
-        super().__init__(name, lang, builtin=True)
+    def __init__(self, name, lang, encode_fn, lower_bound, upper_bound, builtin=False):
+        super().__init__(name, lang, builtin=builtin)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.encode = encode_fn
@@ -173,22 +175,32 @@ def float_encode_fn(x):
     return float(x)
 
 
+def build_the_bools(lang):
+    bools = lang.sort('Boolean')
+    # TODO: we really should be setting builtin to True, but at the moment this is undesirable, as in many places in
+    #       the code we seem to assume that "builtin" sorts are kind of "numeric" sorts, which leads us to try to do
+    #       things with the new Bool sort that cannot be done, e.g. to cast string object "True" to a value, etc.
+    # bools.builtin = True
+    lang.constant('True', bools)
+    lang.constant('False', bools)
+    return bools
+
+
 def build_the_naturals(lang):
-    the_nats = Interval('Natural', lang, int_encode_fn, 0, 2 ** 32 - 1)
+    the_nats = Interval('Natural', lang, int_encode_fn, 0, 2 ** 32 - 1, builtin=True)
     the_nats.builtin = True
     return the_nats
 
 
 def build_the_integers(lang):
-    the_ints = Interval('Integer', lang, int_encode_fn, -(2 ** 31 - 1), 2 ** 31 - 1)
+    the_ints = Interval('Integer', lang, int_encode_fn, -(2 ** 31 - 1), 2 ** 31 - 1, builtin=True)
     the_ints.builtin = True
     return the_ints
 
 
 def build_the_reals(lang):
-    reals = Interval('Real', lang, float_encode_fn, -3.40282e+38, 3.40282e+38)
+    reals = Interval('Real', lang, float_encode_fn, -3.40282e+38, 3.40282e+38, builtin=True)
     reals.builtin = True
-    # the_reals.pi = scipy.constants.pi
     return reals
 
 
@@ -196,3 +208,26 @@ def attach_arithmetic_sorts(lang):
     real_t = lang.attach_sort(build_the_reals(lang), lang.ns.object)
     int_t = lang.attach_sort(build_the_integers(lang), real_t)
     _ = lang.attach_sort(build_the_naturals(lang), int_t)
+
+
+def compute_signature_bindings(signature):
+    """ Return an exhaustive list of all possible bindings compatible with the given signature, i.e.
+    list of sorts. """
+    domains = [s.domain() for s in signature]
+    for binding in itertools.product(*domains):
+        yield binding
+
+
+def compute_direct_sort_map(lang):
+    """ Return a map from each sort s to a list of the objects that have s as their direct sort
+     (i.e. ignoring parent sorts). """
+    res = {s: [] for s in lang.sorts if not s.builtin}
+    _ = [res[o.sort].append(o) for o in lang.constants()]
+    return res
+
+
+def get_closest_builtin_sort(s: Sort):
+    for s in inclusion_closure(s):
+        if s.builtin:
+            break
+    return s

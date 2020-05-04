@@ -1,4 +1,4 @@
-dist: xenial   # required for Python >= 3.7
+dist: bionic
 language: python
 
 env:
@@ -9,16 +9,16 @@ env:
 
 matrix:
   include:
-    # Test the lint script only with Python 3.6
-    - python: 3.6
-      env: TOXENV=stylechecks
+    # Run the pylint linter with Python 3.6
+    - python: 3.7
+      env: TOXENV=pylint
 
     # Test documentation building only with Python 3.6
-    - python: 3.6
+    - python: 3.7
       env: TOXENV=docs
 
     # Test the building of the ANTLR grammars only with Python 3.6
-    - python: 3.6
+    - python: 3.7
       env: TOXENV=antlrgrammars
 
     # Run the standard pytest tests with different python versions
@@ -28,17 +28,16 @@ matrix:
     - python: 3.7
       env: TOXENV=py37
 
-# python 3.8 seems unable to install scipy, failing with a "No lapack/blas resources found" error.
-#    - python: 3.8-dev
-#      env: TOXENV=py38
+    - python: 3.8
+      env: TOXENV=py38
 
 #  pypy doesn't seem to play nice with scipy?
 #    - python: pypy3.5
 #      env: TOXENV=pypy35 GETBENCHMARKS=true
 
 before_install:
-  # Install Gringo only for the ASP-based grounding & rechability tests
-  - if [[ $TOXENV == py* ]]; then sudo apt-get install -y --no-install-recommends gringo; fi
+  # Install Gringo for the general unit tests and also for the documentation
+  - if [[ $TOXENV == py* ]] || [[ $TOXENV == docs ]]; then sudo apt-get install -y --no-install-recommends gringo && gringo --version; fi
 
   # Install curl for running the codecov script
   - if [[ $TOXENV == pycoverage ]]; then sudo apt-get install -y --no-install-recommends curl; fi

@@ -12,21 +12,29 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join('..')))
-import tarski
+import importlib
+
+
 from recommonmark.transform import AutoStructify
+sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
+
+# Load the version number from ../src/tarski/version.py
+root = os.path.abspath(os.path.join('..'))
+spec = importlib.util.spec_from_file_location('tsk.version', os.path.join(root, 'src/tarski/version.py'))
+tskversion = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(tskversion)
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'Tarski'
-copyright = '2019, Miquel Ramírez and Guillem Francès'
+copyright = '2019-2020, Miquel Ramírez and Guillem Francès'
 author = 'Miquel Ramírez and Guillem Francès'
 
 # The short X.Y version.
-version = tarski.__version__
+version = tskversion.__version__
 # The full version, including alpha/beta/rc tagss
-release = tarski.__version__
+release = tskversion.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +43,8 @@ release = tarski.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    # 'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
     'nbsphinx',  # To use Jupyter notebooks within the documentation <https://nbsphinx.readthedocs.io/en/0.4.2/>
     'sphinx.ext.mathjax',  # To render latex in the generated HTML
     'recommonmark',  # To use markdown documents as well
@@ -79,6 +88,11 @@ source_suffix = {
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Recommonmarkdoc'
+
+# TODO: Remove this once we discover how to install or mock Gringo in the
+#       Readthedocs servers.
+if os.environ.get('READTHEDOCS') == 'True':
+    nbsphinx_allow_errors = True
 
 
 # app setup hook

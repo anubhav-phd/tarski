@@ -310,7 +310,6 @@ class VariableBinding:
         variables = variables or []
         # An (ordered) map between variable name and the variable itself:
         self.variables = OrderedDict((v.symbol, v) for v in variables)
-        self._idx = 0
         self._v_values = variables[:]
         self.index_ = {v.symbol: i for i, v in enumerate(variables)}
 
@@ -352,12 +351,8 @@ class VariableBinding:
         return list(self.variables.values())
 
     def __iter__(self):
-        self._v_values = [v for _, v in self.variables.items()]
-        self._idx = 0
-        return self
+        yield from self.variables.values()
 
-    def __next__(self):
-        if self._idx == len(self._v_values):
-            raise StopIteration()
-        self._idx += 1
-        return self._v_values[self._idx - 1]
+    def __str__(self):
+        return f"Variables({','.join(map(str, self._v_values))})"
+    __repr__ = __str__

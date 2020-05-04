@@ -1,16 +1,22 @@
-
+import tarski.benchmarks.blocksworld
+from tarski.benchmarks.counters import generate_fstrips_counters_problem
 from tarski.fstrips.representation import collect_effect_free_parameters, project_away_effect_free_variables, \
-    collect_effect_free_variables, project_away_effect_free_variables_from_problem, is_typed_problem
-from tarski.syntax import exists, land
-from tarski.fstrips import representation as rep
+    collect_effect_free_variables, project_away_effect_free_variables_from_problem, is_typed_problem, \
+    identify_cost_related_functions, compute_delete_free_relaxation, is_delete_free, is_strips_problem, \
+    is_conjunction_of_positive_atoms, is_strips_effect_set, compile_away_formula_negated_literals, \
+    compile_action_negated_preconditions_away, compile_negated_preconditions_away, compute_complementary_atoms
+from tarski.syntax import exists, land, neg
+from tarski.fstrips import representation as rep, AddEffect, DelEffect
+from tarski.syntax.ops import flatten
 
 from tests.common import blocksworld
-from tests.common.blocksworld import generate_small_fstrips_bw_language
+from tarski.benchmarks.blocksworld import generate_fstrips_bw_language, generate_fstrips_blocksworld_problem, \
+    generate_strips_blocksworld_problem
 from tests.io.common import collect_strips_benchmarks, reader
 
 
 def test_basic_representation_queries():
-    lang = generate_small_fstrips_bw_language(nblocks=5)
+    lang = generate_fstrips_bw_language(nblocks=5)
     clear, loc, b1, b2, b3 = lang.get('clear', 'loc', 'b1', 'b2', 'b3')
     x = lang.variable('x', lang.ns.block)
 
@@ -26,7 +32,7 @@ def test_basic_representation_queries():
 
     assert rep.is_conjunction_of_literals(clear(b1) & clear(b2))
     assert rep.is_conjunction_of_literals(clear(b1) & ~clear(b2))
-    assert rep.is_conjunction_of_literals(clear(b1) & ~~clear(b2))
+    assert not rep.is_conjunction_of_literals(clear(b1) & ~~clear(b2))
 
     assert rep.is_conjunction_of_literals(loc(b1) == b2)
     assert rep.is_conjunction_of_literals(loc(b1) != b2)
@@ -38,7 +44,7 @@ def test_basic_representation_queries():
 
 
 def test_literal_collection():
-    lang = generate_small_fstrips_bw_language(nblocks=5)
+    lang = generate_fstrips_bw_language(nblocks=5)
     clear, loc, b1, b2, b3 = lang.get('clear', 'loc', 'b1', 'b2', 'b3')
     x = lang.variable('x', lang.ns.block)
 
@@ -60,15 +66,15 @@ def test_literal_collection():
 
 
 def test_is_typed():
-    problem = blocksworld.generate_small_fstrips_bw_problem()
+    problem = generate_fstrips_blocksworld_problem()
     assert is_typed_problem(problem)
 
-    problem = blocksworld.generate_small_strips_bw_problem()
+    problem = tarski.benchmarks.blocksworld.generate_strips_blocksworld_problem()
     assert not is_typed_problem(problem)
 
 
 def test_free_variables_in_schema_manipulations():
-    problem = blocksworld.generate_small_fstrips_bw_problem()
+    problem = generate_fstrips_blocksworld_problem()
     free = collect_effect_free_parameters(problem.get_action('move'))
     assert not free  # Move has no effect-free variable
 
@@ -122,3 +128,160 @@ def test_effect_free_variables_in_caldera():
     names1 = sorted(x.symbol for x in problem.get_action('get_domain').parameters)
     names2 = sorted(x.symbol for x in problem2.get_action('get_domain').parameters)
     assert names1 == names2 == ['?v01']
+
+
+def test_cost_function_identification():
+    problem = generate_fstrips_counters_problem(ncounters=3)
+    functions = identify_cost_related_functions(problem)
+    assert functions == set()
+
+    instance_file, domain_file = collect_strips_benchmarks(["agricola-opt18-strips:p01.pddl"])[0]
+    problem = reader().read_problem(domain_file, instance_file)
+    functions = identify_cost_related_functions(problem)
+    assert functions == {"group_worker_cost"}
+
+
+def test_delete_free_functions():
+    problem = generate_strips_blocksworld_problem()
+    relaxed = compute_delete_free_relaxation(problem)
+
+    pickup = problem.get_action('pick-up')
+    assert len(pickup.effects) == 4  # Make sure the old action is unaffected
+
+    assert not is_delete_free(problem)
+    assert is_delete_free(relaxed)
+
+    pickup = relaxed.get_action('pick-up')
+    # The new action has had its 3 delete-effects removed
+    assert len(pickup.effects) == 1 and isinstance(pickup.effects[0], AddEffect)
+
+
+def test_strips_analysis():
+    problem = generate_strips_blocksworld_problem()
+    assert is_strips_problem(problem)
+
+    lang = problem.language
+    clear, on, ontable, handempty, holding = lang.get('clear', 'on', 'ontable', 'handempty', 'holding')
+    x = lang.variable('x', 'object')
+
+    phi = clear(x) & ~ontable(x)
+    assert not is_conjunction_of_positive_atoms(clear(x) & ~ontable(x))
+
+    assert is_strips_effect_set([DelEffect(ontable(x)), DelEffect(clear(x))])
+    assert is_strips_effect_set([DelEffect(ontable(x)), DelEffect(ontable(x))])
+    # Not strips, as it has an effect with conditions:
+    assert not is_strips_effect_set([DelEffect(ontable(x), clear(x)), AddEffect(ontable(x))])
+    # Not strips, as it has two contradictory effects:
+    assert not is_strips_effect_set([DelEffect(ontable(x)), AddEffect(ontable(x))])
+
+    problem = generate_fstrips_counters_problem(ncounters=3)
+
+    assert not is_strips_problem(problem)
+    inc = problem.get_action('increment')
+    assert not is_strips_effect_set(inc.effects)
+
+
+def test_neg_precondition_compilation_on_formulas():
+    problem = generate_strips_blocksworld_problem()
+    lang = problem.language
+    clear, on, ontable, handempty, holding = lang.get('clear', 'on', 'ontable', 'handempty', 'holding')
+    x = lang.variable('x', 'object')
+    y = lang.variable('y', 'object')
+
+    negpreds = dict()
+
+    comp = compile_away_formula_negated_literals(clear(x) & (x != y), negpreds)
+    assert comp == clear(x) & (x != y) and not negpreds  # No change was made
+
+    comp = compile_away_formula_negated_literals(neg(x == y), negpreds)
+    assert comp == neg(x == y) and not negpreds  # No change was made
+
+    comp = compile_away_formula_negated_literals(clear(x) & ontable(x), negpreds)
+    assert comp == clear(x) & ontable(x) and not negpreds  # No change was made
+
+    comp = compile_away_formula_negated_literals(clear(x) & ~ontable(x), negpreds)
+    assert str(comp) == '(clear(x) and _not_ontable(x))'
+
+    # Compile again to check that predicate is not declared twice, which would raise an error
+    comp = compile_away_formula_negated_literals(clear(x) & ~ontable(x), negpreds)
+    assert str(comp) == '(clear(x) and _not_ontable(x))'
+
+
+def test_neg_precondition_compilation_on_action():
+    problem = generate_strips_blocksworld_problem()
+    lang = problem.language
+    clear, on, ontable, handempty, holding = lang.get('clear', 'on', 'ontable', 'handempty', 'holding')
+    x = lang.variable('x', 'object')
+
+    negpreds = dict()
+    
+    pickup = problem.get_action('pick-up')
+    pickupc = compile_action_negated_preconditions_away(pickup, negpreds)
+    assert flatten(pickup.precondition) == pickupc.precondition and len(negpreds) == 0
+
+    act1 = problem.action('act1', [x],
+                          precondition=clear(x) & ~ontable(x) & handempty(),
+                          effects=[DelEffect(ontable(x), ~clear(x)),
+                                   AddEffect(ontable(x))])
+    act1c = compile_action_negated_preconditions_away(act1, negpreds)
+    assert len(negpreds) == 2  # For ontable and for clear
+    assert str(act1c.precondition) == '(clear(x) and _not_ontable(x) and handempty())'
+    assert str(act1c.effects[0].condition) == '_not_clear(x)'
+
+
+def test_neg_precondition_compilation_on_problem():
+    problem = generate_strips_blocksworld_problem()
+    lang = problem.language
+    b1, clear, on, ontable, handempty, holding = lang.get('b1', 'clear', 'on', 'ontable', 'handempty', 'holding')
+    x = lang.variable('x', 'object')
+
+    compiled = compile_negated_preconditions_away(problem)
+
+    # Check that nothing was changed
+    for aname, a1 in problem.actions.items():
+        a2 = compiled.get_action(aname)
+        assert flatten(a1.precondition) == a2.precondition
+
+    act1 = problem.action('act1', [x],
+                          precondition=clear(x) & ~ontable(x) & handempty(),
+                          effects=[DelEffect(ontable(x), ~clear(x)),
+                                   AddEffect(ontable(x))])
+    compiled = compile_negated_preconditions_away(problem)
+    assert str(compiled.get_action('act1').precondition) == '(clear(x) and _not_ontable(x) and handempty())'
+
+
+def test_neg_precondition_compilation_on_problem2():
+    problem = generate_strips_blocksworld_problem()
+    lang = problem.language
+    b1, clear, on, ontable, handempty, holding = lang.get('b1', 'clear', 'on', 'ontable', 'handempty', 'holding')
+
+    # Change the goal to include some negated preconditions, this should trigger
+    # the rewriting of some action effects
+    problem.goal = ~ontable(b1) & ~handempty()
+    compiled = compile_negated_preconditions_away(problem)
+
+    # Check that indeed new effects have been added of the appropriate type and appropriate predicate
+    assert str(compiled.get_action('unstack').effects[-1]) == '(T -> ADD(_not_handempty()))'
+    assert str(compiled.get_action('stack').effects[-1]) == '(T -> DEL(_not_handempty()))'
+
+    # Check the goal has been correctly rewritten
+    assert str(compiled.goal) == '(_not_ontable(b1) and _not_handempty())'
+
+    # Check the initial state has been correctly updated
+    init = compiled.init
+    nhe, nont = lang.get('_not_handempty', '_not_ontable')
+    assert init[nont(b1)] or init[ontable(b1)]
+    assert init[neg(nhe())] or init[neg(handempty())]
+
+
+def test_compute_complementary_atoms():
+    problem = generate_strips_blocksworld_problem()
+    lang = problem.language
+    testpred = lang.predicate('test')  # Try a nullary predicate
+
+    assert list(compute_complementary_atoms(problem.init, testpred)) == [()]
+
+    problem.init.add(testpred)
+    assert list(compute_complementary_atoms(problem.init, testpred)) == []
+
+    # assert len(list(compute_complementary_atoms(problem.init, lang.get('clear')))) == 2

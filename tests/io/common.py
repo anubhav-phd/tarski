@@ -1,12 +1,15 @@
 import os
+from pathlib import Path
 
 from tarski.io import FstripsReader
 from tarski.io.utils import find_domain_filename
 
 
-def reader(theories=None, strict_with_requirements=True):
+def reader(theories=None, strict_with_requirements=True, case_insensitive=False):
     """ Return a reader configured to raise exceptions on syntax errors """
-    return FstripsReader(raise_on_error=True, theories=theories, strict_with_requirements=strict_with_requirements)
+    return FstripsReader(raise_on_error=True, theories=theories,
+                         strict_with_requirements=strict_with_requirements,
+                         case_insensitive=case_insensitive)
 
 
 def get_benchmark_dir_if_exists(envvar):
@@ -29,10 +32,11 @@ def add_domains_from(envvar, domains, benchmark_prefix=None):
 
     instances = []
 
-    # This works only if the domain is called domain.pddl TODO Extend to infer other domain names automatically
     for dom, ins in (x.split(":") for x in domains):
         base_dir = os.path.join(db, dom)
         instance_file = os.path.join(base_dir, ins)
+        if not Path(instance_file).is_file():
+            raise RuntimeError(f'PDDL instance file "{instance_file}" doesn\'t exist')
         domain_file = find_domain_filename(instance_file)
         instances.append([instance_file, domain_file])
     return instances

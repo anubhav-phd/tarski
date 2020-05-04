@@ -8,20 +8,19 @@ from collections import defaultdict
 from functools import reduce
 from pathlib import Path
 
-try:
-    from pysdd.sdd import Vtree, SddManager
-except ImportError as err:
-    raise ImportError("Could not import pysdd - sdd module not available") from None
-
-from .util import stdout_redirector
+from ..utils.command import stdout_redirector
 from ..utils import resources
 from ..utils.serialization import serialize_atom
 from ..evaluators.simple import evaluate
 from ..syntax import lor, neg, Atom, BuiltinPredicateSymbol, CompoundFormula, Connective, Variable, Tautology, builtins
-from ..syntax.ops import flatten, collect_unique_nodes
+from ..syntax.ops import flatten
 from ..grounding.ops import approximate_symbol_fluency
+from ..grounding.common import StateVariableLite
 from ..fstrips import fstrips
 from ..fstrips.representation import collect_literals_from_conjunction
+
+from ..modules import import_sdd
+sdd = import_sdd()
 
 
 class UnsupportedFormalism(RuntimeError):
@@ -31,12 +30,11 @@ class UnsupportedFormalism(RuntimeError):
 
 def scout_actions(task, data):
     """ Check & report which actions have (potentially) some groundings, and which not """
-    # TODO: This will probably fail on parameter-less actions??
     actions, empty = [], []
     for action in task.actions.values():
         cardinalities = [len(list(x.sort.domain())) for x in action.parameters]
         ngroundings = reduce(operator.mul, cardinalities, 1)
-        logging.info(f'{action.ident()}:\t{" * ".join(map(str, cardinalities))} = {ngroundings} potential groundings')
+        # logging.info(f'{action.ident()}:\t{" * ".join(map(str, cardinalities))} = {ngroundings} potential groundings')
         if ngroundings == 0:
             empty.append(action.name)
         else:
@@ -75,30 +73,45 @@ def create_equality_constraints(equalities, selects):
     return eq_constraints
 
 
-def create_grounding_constraints(selects, statics, init, atoms):
+def create_grounding_constraints(selects, statics, init, atoms, reachable_vars=None):
     """ Create the core grounding constraints, taking into account static predicate information.
-     For each predicate p(X_1, ..., X_n) in the precondition of the action, a constraint is created with form:
+    For each predicate p(X_1, ..., X_n) in the precondition of the action, a constraint is created with form:
 
-        select(X_1, z_1) and ... and select(X_n, z_n)  --> p(X_1, ..., X_n)
+        select(X_1, c_1) and ... and select(X_n, c_n)  --> p(c_1, ..., c_n)
 
+    where the c_i's are the values that the variables X_i can take.
 
      - selects: select atoms
      - statics: set of static predicate symbols
      - init: initial state model
      - precs: set of action precondition atoms
+     - reachable_vars: (optional) set of reachable vars to constrain the possible groundings
     """
     fluents = set()
     count = defaultdict(int)
     constraints = []
+    nullary_atoms, unary_atoms = [], defaultdict(list)
     for atom in atoms:
         lang = atom.predicate.language  # The language of the original problem
+        ar = atom.predicate.arity
+
         for x in atom.subterms:
             count[x.symbol] += 1
-        SX = [selects[sub.symbol] for sub in atom.subterms]
-        for selectlist in itertools.product(*SX):
+
+        if ar == 0:
+            nullary_atoms.append(atom)
+
+        argument_selects = [selects[sub.symbol] for sub in atom.subterms]
+        for selectlist in itertools.product(*argument_selects):
+            # Note that this will have one iteration with selectlist=() for nullary atoms
             values = [lang.get_constant(s.subterms[-1].symbol) for s in selectlist]
             head = atom.predicate(*values)
             body = [neg(h) for h in selectlist]
+
+            if ar == 1:
+                assert len(selectlist) == 1
+                affected_select = selectlist[0]
+                unary_atoms[affected_select].append(head)
 
             # We disinguish the following cases:
             # (1) The atom p is a fluent: post a constraint -sel(x1, z1) or ... or -sel(xn, zn) or p(x1, ..., xn)
@@ -106,20 +119,29 @@ def create_grounding_constraints(selects, statics, init, atoms):
             # (3) The atom p is static, but doesn't hold in init: then post -sel(x1, z1) or ... or -sel(xn, zn)
             # Note that (2) and (3) are just specializations of (1)
 
-            if atom.predicate in statics:  # p is static
-                if init[head]:
-                    continue  # No need to post anything
-                else:
+            if atom.predicate in statics:
+                if init[head]:  # Case (2): p is static and holds in init
+                    continue
+                else:  # Case (3): p is static and doesn't hold in init
                     assert body
-                    if len(body) == 1:
-                        constraints += body
-                    else:
-                        constraints.append(lor(*body))
-            else:  # p is a fluent
-                fluents.add(head)
-                constraints.append(lor(*body, head) if body else head)
+                    constraints += body if len(body) == 1 else [lor(*body)]
+            else:  # Case (1): p is a fluent
+                svar = StateVariableLite.from_atom(head)
+                if reachable_vars is None or svar in reachable_vars:
+                    fluents.add(head)
+                    constraints.append(lor(*body, head) if body else head)
+                else:
+                    # If we have a constraint of the style
+                    # select(X_1, c_1) and ... and select(X_n, c_n)  --> p(c_1, ..., c_n)
+                    # and atom p(c_1, ..., c_n) has been proven unreachable, then we simply add the (negated) antecedent
+                    # of the implication
 
-    return constraints, count, fluents
+                    # TODO This assert is probably incorrect, if body is empty, then we should simply conclude
+                    #      that the schema can yield no applicable ground action
+                    assert body
+                    constraints += body if len(body) == 1 else [lor(*body)]
+
+    return constraints, count, fluents, nullary_atoms, unary_atoms
 
 
 def setup_metalanguage(action):
@@ -146,8 +168,12 @@ def setup_metalanguage(action):
 
 
 def generate_select_atoms(action, metalang, parameters, domains):
-    """ Create the atoms of the form select(X, x) for each action parameter X and possible value x in its domain """
-    domain_constraints = []
+    """ Create the atoms of the form select(X, x) for each action parameter X and possible value x in its domain.
+     Each such atom is paired with constraints of the form
+         select(X, x1) or ... or select(X, xn); for all values x1, ..., xn
+         not select(X, x_i) or not select(X, x_j); for all pairs of values x_i, x_j
+     """
+    select_constraints = []
 
     # Declare a type-agnostic "select(x, v)" predicate
     selectpred = metalang.predicate('_select_', metalang.Object, metalang.Object)
@@ -164,68 +190,92 @@ def generate_select_atoms(action, metalang, parameters, domains):
         assert len(sel) > 0
         if len(sel) == 1:
             # If parameter X has one single possible value V, then selected(X, V) must be true
-            domain_constraints.append(sel[0])
+            select_constraints.append(sel[0])
             continue
 
-        domain_constraints.append(lor(*sel, flat=True))
-        domain_constraints.extend(lor(neg(v1), neg(v2)) for v1, v2 in itertools.combinations(sel, 2))
+        select_constraints.append(lor(*sel, flat=True))
+        select_constraints.extend(lor(neg(v1), neg(v2)) for v1, v2 in itertools.combinations(sel, 2))
 
-    return selects, sum(len(s) for s in selects.values()), domain_constraints
-
-
-def extract_equalities(prec_constraints):
-    """ Extract a table with action parameter equalities of the form X=Y, X!=Y"""
-    eqs = set()
-    for atom, polarity in prec_constraints:
-        if atom.predicate.symbol in builtins.get_equality_predicates():
-            eqs.add(atom if polarity else builtins.negate_builtin_atom(atom))
-    return eqs
+    return selects, sum(len(s) for s in selects.values()), select_constraints
 
 
-def preprocess_parameter_domains(action, statics, domains, init):
-    """ Simplify the precondition formula and prune the potential domains of action parameters based on statics
-    and basic CSP techniques"""
+def preprocess_parameter_domains(action, statics, domains, init, reachable_vars):
+    """ Simplify the precondition formula and prune the potential domains of action parameters based on statics,
+    reachability information (if available), and some basic CSP techniques. """
     flattened = flatten(action.precondition)
     constraints = collect_literals_from_conjunction(flattened)
     if constraints is None:
         # Check that we have have a plain conjunction of atoms (constraints); if not, abort
         raise UnsupportedFormalism(f'Cannot process complex precondition of action "{action.ident()}":'
                                    f'\n\t{action.precondition}"')
+    constraints = list(constraints)  # Just to make sure iteration is always in the same order
+    using_reachability_info = reachable_vars is not None
 
-    # At the moment we only enforce node consistency for (static, of course) unary constraints
-    # TODO Might be worth achieving arc-consistency taking all constraints into account
-    removable_subformulas = set()
-    for atom, polarity in constraints:
+    # Index the values that can go on each position of each precondition atom according to the initial state
+    # Note that this is equivalent to creating a DB index for each column in each table (=atom)
+    lang = action.language
+    extensions = init.list_all_extensions()
+    indexed_values = {}
+    for k in extensions.keys():
+        symbol = lang.get(k[0])
+        indexed_values[k[0]] = [set() for _ in range(symbol.uniform_arity())]
+    for signature, ext in extensions.items():
+        sname = signature[0]
+        for tup in ext:
+            for pos, value in enumerate(tup):
+                indexed_values[sname][pos].add(value.name)
+
+    # If an overapproximation of reachable (fluent) atoms was provided, add those values to the column indexes.
+    # In this case, the column indexes represent an overapproximation of all possible values that can ever be reached.
+    # Otherwise, they only represent that for the static atoms
+    if using_reachability_info:
+        for v in reachable_vars:
+            sname = v.symbol.name
+            for pos, value in enumerate(v.binding):
+                indexed_values[sname][pos].add(value.name)
+
+    # Create yet another index with the role that each parameter plays in each (non-builtin) atom of the precondition,
+    # so e.g. parameter_roles[x] = (p, i) means that action parameter x appears in the i-th position of precondition
+    # atom p
+    parameter_roles = defaultdict(list)
+    eq_atoms, standard_constraints = set(), list()
+    for i, (atom, polarity) in enumerate(constraints, start=0):
         predicate = atom.predicate
-        if predicate.arity != 1:
-            continue
-        if predicate not in statics:
-            if not predicate.builtin:
+
+        if predicate.symbol in builtins.get_equality_predicates():
+            # If the atom is an (in-)equality atom, record it as such
+            eq_atoms.add(atom if polarity else builtins.negate_builtin_atom(atom))
+        else:
+            assert polarity is True
+            standard_constraints.append(atom)
+            for j, st in enumerate(atom.subterms, start=0):
+                assert isinstance(st, Variable)
+                # TODO This could be improved to deal also with static atoms p(c), where c is a constant, not a variable
+                parameter_roles[st.symbol].append((atom, j))  # param st.symbol appears in constraint atom, position j
+
+    # Prune away any domain value that is not arc-consistent, i.e. such that there is some precondition atom for which
+    # that value cannot be extended into a full assignment that fulfills the constraint
+    for parameter in action.parameters:
+        nbefore = len(domains[parameter.symbol])  # Just for debugging purposes
+        for atom, position in parameter_roles[parameter.symbol]:
+            if atom.predicate not in statics and not using_reachability_info:
+                # If we are not using reachability info, we cannot prune any domain value for fluents
                 continue
+            assert atom.subterms[position].symbol == parameter.symbol
+            values = indexed_values[atom.predicate.name][position]
+            domains[parameter.symbol].intersection_update(values)
 
-        term = atom.subterms[0]
-        if not isinstance(term, Variable):
-            continue  # TODO This could be improved to resolve static atoms p(c), where c is a constant, not a variable
+        # print(f'{nbefore - len(domains[parameter.symbol])} objects pruned from domain of parameter '
+        #       f'"{parameter}" for being arc-inconsistent')
 
-        lang = predicate.language
-        parameter = term.symbol
-        unsatisfied = set()
-        for obj in domains[parameter]:
-            if init[predicate(lang.get_constant(obj))] is not polarity:
-                unsatisfied.add(obj)
-        # print(f"Objects {unsatisfied} can be pruned for node-inconsistency reasons from the extension of {predicate}")
-        domains[parameter].difference_update(unsatisfied)  # Remove the values from the domains
-        removable_subformulas.add(atom)  # Mark the static atom to be removed from the precondition
-
-    active = tuple(sub if polarity else neg(sub) for sub, polarity in constraints if sub not in removable_subformulas)
+    # Separate and return those atoms that are not builtin and that, if static, have arity > 1
+    # (arity 1 statics have also played their role in shaping the allowed domains, so no need to consider them further)
+    removable_subformulas = set(c for c in standard_constraints if c.predicate.arity == 1 and c.predicate in statics)
+    active = [c for c in standard_constraints if c not in removable_subformulas]
     if len(active) == 0:
-        optimized = Tautology
-    elif len(active) == 1:
-        optimized = active[0]
-    else:
-        optimized = flattened  # If we get here, flattened must be a conjunction
-        optimized.subformulas = active
-    return domains, optimized, constraints
+        active = [Tautology]
+
+    return domains, active, eq_atoms
 
 
 def reshapen_vtree(alpha, manager):
@@ -268,7 +318,9 @@ def reshapen_vtree(alpha, manager):
     # manager_vtree = manager.vtree()
 
 
-def compile_action_schema(problem, statics, action, data, max_size, conjoin_with_init=False):
+def compile_action_schema(problem, statics, action, data, max_size,
+                          conjoin_with_init=False, var_ordering=None, reachable_vars=None,
+                          sdd_incr_minimization_time=None):
     print(f'Processing action "{action.ident()}"')
     with resources.timing(f"\tGenerating theory"):
         data['instance'] += [problem.name]
@@ -276,42 +328,53 @@ def compile_action_schema(problem, statics, action, data, max_size, conjoin_with
         # Set up a metalanguage for the encoding of the SDD applicability theory
         metalang, parameters, domains = setup_metalanguage(action)
 
-        domains, precondition, prec_constraints = preprocess_parameter_domains(action, statics, domains, problem.init)
+        domains, precondition_nonbuiltin_atoms, eq_atoms =\
+            preprocess_parameter_domains(action, statics, domains, problem.init, reachable_vars)
 
         if any(len(dom) == 0 for dom in domains.values()):
             # Some action parameter has empty associated domain, hence no ground action will result from this
             logging.info(f'Action "{action.ident()}" has parameter with empty domain, hence can be pruned')
-            logging.info(f'Parameter list:\n{domains}')
             report_theory(data, [], [], [], [], 0,
                           sdd_sizes=0, sdd_size=0, as0=0, t0=None)
             manager, false = setup_false_sdd_manager()  # This will return a "False" precondition
             return manager, false, {}, []
 
-        selects, nvars, dom_constraints = generate_select_atoms(action, metalang, parameters, domains)
+        selects, nvars, select_constraints = generate_select_atoms(action, metalang, parameters, domains)
 
-        equalities = extract_equalities(prec_constraints)
-        prec_atoms = collect_unique_nodes(precondition, lambda x: isinstance(x, Atom) and not x.predicate.builtin)
-        eq_constraints = create_equality_constraints(equalities, selects)
+        eq_constraints = create_equality_constraints(eq_atoms, selects)
 
-        grounding_constraints, count, fluents = create_grounding_constraints(selects, statics, problem.init, prec_atoms)
+        grounding_constraints, count, fluents, nullary_atoms, unary_atoms = create_grounding_constraints(
+            selects, statics, problem.init, precondition_nonbuiltin_atoms, reachable_vars=reachable_vars)
+
         nvars += len(fluents)
 
         symbols = compute_symbol_ids(count, selects, fluents)
 
-    manager = setup_sdd_manager(nvars)
+    if var_ordering == "arity":  # Compute a good variable ordering
+        sdd_vars_from_nullaries = set(symbols[a] for a in nullary_atoms)
+        sdd_vars_from_unaries = []
+        for var, select_atoms in unary_atoms.items():
+            sdd_vars_from_unaries += [symbols[var]] + [symbols[a] for a in select_atoms]
 
-    atoms = [x for x in grounding_constraints if isinstance(x, Atom)]
-    nonatoms = [x for x in grounding_constraints if not isinstance(x, Atom)]
+        remaining = [i for i in range(1, nvars + 1) if
+                     i not in sdd_vars_from_nullaries and i not in set(sdd_vars_from_unaries)]
 
-    allconstraints = list(itertools.chain(dom_constraints, eq_constraints, grounding_constraints))
-    # allconstraints = list(itertools.chain(atoms, dom_constraints, eq_constraints, nonatoms))
-    # allconstraints = list(itertools.chain(eq_constraints, grounding_constraints, dom_constraints))
+        var_order = list(sdd_vars_from_nullaries) + sdd_vars_from_unaries + remaining
+        manager = setup_sdd_manager(nvars, var_order=var_order)
+    else:
+        if var_ordering is not None and var_ordering != "default":
+            raise RuntimeError(f'Variable ordering type "{var_ordering} not recognised')
+        manager = setup_sdd_manager(nvars)
+
+    allconstraints = list(itertools.chain(select_constraints, eq_constraints, grounding_constraints))
+    # allconstraints = list(itertools.chain(atoms, select_constraints, eq_constraints, nonatoms))
+    # allconstraints = list(itertools.chain(eq_constraints, grounding_constraints, select_constraints))
     # alltranslated = [translate_to_pysdd(c, symbols, manager) for c in allconstraints]
 
     if not allconstraints:
         # No constraints at all must mean an action schema with no parameters and and empty precondition
         logging.info(f'Action "{action.ident()}" has an empty SDD theory')
-        report_theory(data, dom_constraints, eq_constraints, fluents, grounding_constraints, nvars,
+        report_theory(data, select_constraints, eq_constraints, fluents, grounding_constraints, nvars,
                       sdd_sizes=0, sdd_size=0, as0=1, t0=None)
         manager, true = setup_true_sdd_manager()  # This will return a "False" precondition
         return manager, true, {}, []
@@ -321,15 +384,14 @@ def compile_action_schema(problem, statics, action, data, max_size, conjoin_with
 
     t0 = time.time()
 
-    with resources.timing(f"\tConstructing SDD"):
+    with resources.timing(f"\tBuilding SDD for {manager.var_count()} variables and {len(allconstraints)} constraints"):
         precondition_sdd = translate_to_pysdd(allconstraints[0], symbols, manager)
 
         for c in allconstraints[1:]:
             precondition_sdd = precondition_sdd & translate_to_pysdd(c, symbols, manager)
             size = precondition_sdd.size()
-
-            minimize_sdd(manager, precondition_sdd, 10)
-
+            if sdd_incr_minimization_time is not None and sdd_incr_minimization_time > 0:
+                minimize_sdd(manager, precondition_sdd, int(sdd_incr_minimization_time))
             size = (size, precondition_sdd.size())
             sdd_sizes.append(size)
 
@@ -376,8 +438,9 @@ def compile_action_schema(problem, statics, action, data, max_size, conjoin_with
     else:
         as0 = None
 
-    report_theory(data, dom_constraints, eq_constraints, fluents, grounding_constraints, nvars,
-                  sdd_sizes=sdd_sizes, sdd_size=sdd_sizes[-1], as0=as0, t0=t0)
+    size = sdd_sizes[-1] if sdd_sizes else 0
+    report_theory(data, select_constraints, eq_constraints, fluents, grounding_constraints, nvars,
+                  sdd_sizes=sdd_sizes, sdd_size=size, as0=as0, t0=t0)
 
     return manager, precondition_sdd, symbols, allconstraints
 
@@ -400,14 +463,14 @@ def compute_ground_action_name(action, binding):
     return groundaction_string
 
 
-def report_theory(data, dom_constraints, eq_constraints, fluents, grounding_constraints, nvars,
+def report_theory(data, select_constraints, eq_constraints, fluents, grounding_constraints, nvars,
                   sdd_sizes, sdd_size, as0, t0):
     data['selects'] += [nvars]
     data['atoms'] += [len(fluents)]
-    data['DOM'] += [len(dom_constraints)]
+    data['DOM'] += [len(select_constraints)]
     data['EQ'] += [len(eq_constraints)]
     data['GROUND'] += [len(grounding_constraints)]
-    data['nclauses'] += [len(dom_constraints) + len(eq_constraints) + len(grounding_constraints)]
+    data['nclauses'] += [len(select_constraints) + len(eq_constraints) + len(grounding_constraints)]
     data['nvars'] += [nvars]
     data['sdd_sizes'] += [sdd_sizes]
     data['sdd_size'] += [sdd_size]
@@ -448,18 +511,24 @@ def translate_to_pysdd(phi, syms, manager):
     raise RuntimeError(f"Could not translate {phi}")
 
 
-def setup_sdd_manager(nvars):
+def validate_var_order(nvars, var_order):
+    assert len(var_order) == nvars
+    assert all(x in set(var_order) for x in range(1, nvars + 1))
+
+
+def setup_sdd_manager(nvars, var_order=None):
     """ Set up the SDD manager with some sensible defaults"""
     # set up vtree and manager
-    var_order = list(range(1, nvars + 1))  # lexicographic
+    var_order = var_order or list(range(1, nvars + 1))  # lexicographic
+    validate_var_order(nvars, var_order)
     # var_order = list(range(nvars,0,-1)) # state atoms first
     vtree_type = "right"  # OBDD-style
     # vtree_type = "balanced"
     # vtree_type = "left"
     # vtree_type = "random"
 
-    vtree = Vtree(nvars, var_order, vtree_type)
-    return SddManager(var_count=nvars, auto_gc_and_minimize=0, vtree=vtree)
+    vtree = sdd.Vtree(nvars, var_order, vtree_type)
+    return sdd.SddManager(var_count=nvars, auto_gc_and_minimize=0, vtree=vtree)
 
 
 def setup_false_sdd_manager():
@@ -476,7 +545,9 @@ def setup_true_sdd_manager():
 
 def process_problem(problem, max_size=20000000,
                     serialization_directory=None, conjoin_with_init=False,
-                    graphs_directory=None, sdd_minimization_time=None):
+                    graphs_directory=None, sdd_minimization_time=None,
+                    var_ordering=None, reachable_vars=None,
+                    sdd_incr_minimization_time=None):
     # Make sure the initial state has some associated evaluator:
     problem.init.evaluator = problem.init.evaluator or evaluate
 
@@ -486,7 +557,8 @@ def process_problem(problem, max_size=20000000,
 
     for action in actions:
         manager, node, symbols, theory = compile_action_schema(
-            problem, statics, action, data, max_size, conjoin_with_init=conjoin_with_init)
+            problem, statics, action, data, max_size, conjoin_with_init=conjoin_with_init,
+            var_ordering=var_ordering, reachable_vars=reachable_vars, sdd_incr_minimization_time=sdd_incr_minimization_time)
 
         print(f"\tSDD has {node.size()} nodes")
         if sdd_minimization_time is not None and sdd_minimization_time > 0:
@@ -543,13 +615,17 @@ def print_sdd(action, directory, manager, node, symbols, theory):
         print(buf.getvalue().decode('utf-8'), file=f)
 
 
-def minimize_sdd(manager, node, sdd_minimization_time):
+def minimize_sdd(manager, node, sdd_minimization_time, verbose=False):
     node.ref()
     manager.set_vtree_search_time_limit(sdd_minimization_time)
     manager.set_vtree_search_convergence_threshold(0.1)
-    with resources.timing(f"\tMinimizing SDD ({node.size()} nodes) for up to {sdd_minimization_time} sec."):
+    if verbose:
+        with resources.timing(f"\tMinimizing SDD ({node.size()} nodes) for up to {sdd_minimization_time} sec."):
+            manager.minimize_limited()
+        print(f"\tAfter first minimization pass, SDD has {node.size()} nodes")
+    else:
         manager.minimize_limited()
-    print(f"\tAfter first minimization pass, SDD has {node.size()} nodes")
+
     node.deref()
     return node
 
@@ -596,7 +672,7 @@ def join_models(model1, model2):
 
 def truth_value(literal):
     assert literal != 0
-    return False if literal < 0 else True
+    return not (literal < 0)
 
 
 def varid(literal):
@@ -659,7 +735,7 @@ def models(node, fixed, vtree=None):
                         yield join_models(left, right)
         else:  # fill in gap in vtree
             true_sdd = node.manager.true()
-            if Vtree.is_sub(node.vtree(), vtree.left()):
+            if sdd.Vtree.is_sub(node.vtree(), vtree.left()):
                 for left in models(node, fixed, vtree.left()):
                     for right in models(true_sdd, fixed, vtree.right()):
                         yield join_models(left, right)

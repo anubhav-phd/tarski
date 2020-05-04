@@ -3,22 +3,24 @@
 """
 import itertools
 
-from ..syntax.transform import remove_quantifiers, QuantifierEliminationMode
+from ..fstrips.action import AdditiveActionCost
+from ..syntax.transform import remove_quantifiers, QuantifierEliminationMode, expand_universal_effect
 from ..syntax.builtins import symbol_complements
 from ..syntax.ops import free_variables
 from ..syntax import Formula, Atom, CompoundFormula, Connective, Term, Variable, Constant, Tautology, \
     BuiltinPredicateSymbol, QuantifiedFormula, Quantifier, CompoundTerm
 from ..syntax.sorts import parent
-from ..fstrips import Problem, SingleEffect, UniversalEffect, AddEffect, DelEffect, FunctionalEffect
+from ..fstrips import Problem, SingleEffect, AddEffect, DelEffect, FunctionalEffect
+from ..fstrips.representation import identify_cost_related_functions
 
-SOLVABLE = "_solvable_"
+GOAL = "goal"
 
 
-def create_reachability_lp(problem: Problem, ground_actions=True):
+def create_reachability_lp(problem: Problem, ground_actions=True, include_variable_inequalities=False):
     """ Return a reachability logic program, along with the symbol translation dictionary used to create it """
     lp = LogicProgram()
     compiler_class = ReachabilityLPCompiler if ground_actions else VariableOnlyReachabilityLPCompiler
-    compiler = compiler_class(problem, lp)
+    compiler = compiler_class(problem, lp, include_variable_inequalities=include_variable_inequalities)
     compiler.create()
     return lp, compiler.tr
 
@@ -32,11 +34,12 @@ class ReachabilityLPCompiler:
 
     albeit there are some differences which so far we haven't properly described and analyzed.
     """
-    def __init__(self, problem: Problem, lp):
+    def __init__(self, problem: Problem, lp, include_variable_inequalities=False, include_action_costs=False):
         self.problem = problem
         self.lp = lp
-        # self.node_cache = dict()  # A cache of auxiliary subformulas
         self.aux_atom_count = 0
+        self.include_variable_inequalities = include_variable_inequalities
+        self.include_action_costs = include_action_costs
         self.tr = Translator()
 
     def gen_aux_atom(self, args=None):
@@ -46,6 +49,10 @@ class ReachabilityLPCompiler:
 
     def create(self):
         problem, lang, lp = self.problem, self.problem.language, self.lp
+
+        # Preprocess the domain functions to identify those that appear only in
+        # cost-related effects, which we can then ignore safely
+        cost_related_functions = identify_cost_related_functions(problem)
 
         # Declare the PDDL objects with their types, e.g. with a fact "block(b1)".
         constants = lang.constants()
@@ -63,12 +70,16 @@ class ReachabilityLPCompiler:
         # Process all atoms in the initial state, e.g. "on(b1, b2)."
         for atom in problem.init.as_atoms():
             if isinstance(atom, tuple) and isinstance(atom[0], CompoundTerm) and atom[0].symbol.symbol == 'total-cost':
-                continue  # Ignore total-cost effects
+                continue  # Ignore total-cost atoms
             if not isinstance(atom, Atom):
-                assert isinstance(atom, tuple) and len(atom) == 2
+                assert isinstance(atom, tuple) and len(atom) == 2 and isinstance(atom[0], CompoundTerm)
                 t, v = atom
-                raise RuntimeError(f'ReachabilityLPCompiler cannot handle functional atoms in the initial state '
-                                   f'such as "{t} := {v}"')
+                if t.symbol.name in cost_related_functions:
+                    if self.include_action_costs:  # Include init atoms related to costs
+                        lp.rule(self.tarski_functional_atom_to_lp_atom(t, v))
+                    continue
+                raise RuntimeError(
+                    f'ReachabilityLPCompiler cannot handle functional atom "{t} := {v}" in the initial state')
             lp.rule(self.tarski_atom_to_lp_atom(atom))
 
         # Process all actions
@@ -81,37 +92,70 @@ class ReachabilityLPCompiler:
         # TODO To be implemented yet
         assert not problem.derived_predicates
 
-        # Process goal, e.g. "solvable :- on(a,b), on(b,c)." (note that the goal is always ground)
-        phi = remove_quantifiers(lang, problem.goal, QuantifierEliminationMode.Forall)
+        self.process_goal(problem.goal, lang, lp)
+
+        self.add_directives(problem, lp)
+
+    def process_goal(self, goal, lang, lp):
+        # Process goal, e.g. "goal :- on(a,b), on(b,c)." (note that the goal is always ground)
+        phi = remove_quantifiers(lang, goal, QuantifierEliminationMode.Forall)
         body = self.process_formula(phi)
-        lp.rule(self.lp_atom(SOLVABLE), body)
+        lp.rule(self.lp_atom(GOAL), body)
 
     def process_action(self, action, lang, lp):
-        # Construct the head and part of the body of the action atom, e.g. "move(X, Y) :- object(X), object(Y)"
-        # Note that we need to capitalize the parameters of the action schema, as they are LP variables.
-        action_atom = self.lp_atom(action.name, [make_variable_name(v.symbol) for v in action.parameters],
-                                   prefix='action')
-        body = [self.lp_type_atom_from_term(v) for v in action.parameters]
+        # Construct the part of the action rule including action atom plus types,
+        # e.g. "move(X, Y) :- object(X), object(Y)"
+        action_head, action_atom = self.create_action_atoms(action)  # e.g. "move(X, Y)"
+        body = [self.lp_type_atom_from_term(v) for v in action.parameters]  # e.g. "object(X), block(Y)"
+
+        # Process the action costs, if required
+        if self.include_action_costs:
+            self.process_action_cost(action, action_atom, body, lp)
+
         # Remove universal quantifiers and add precondition atoms to the body
         phi = remove_quantifiers(lang, action.precondition, QuantifierEliminationMode.Forall)
-        body += self.process_formula(phi)
-        lp.rule(action_atom, body)
+        body += self.process_formula(phi)  # e.g. "clear(X), on(X, Y)"
+        lp.rule(action_head, body)
         # Now process the effects
         for eff in action.effects:
-            head, body = self.process_effect(lang, eff)
-            if head is not None:
-                lp.rule(head, [action_atom] + body)
+            for expanded in expand_universal_effect(eff):
+                head, body = self.process_effect(lang, expanded, action.name)
+                if head is not None:
+                    lp.rule(head, [action_atom] + body)
+        return action_atom
+
+    def process_action_cost(self, action, action_atom, parameters_types, lp):
+        """ Process the increase-total-cost effect of the given action. This results in a LP atom
+        of the form cost(action(X), 7) :- block(X). """
+        used_varnames = set(make_variable_name(v.symbol) for v in action.parameters)
+        if action.cost is None:
+            lp.rule(f'cost({action_atom}, 1)', parameters_types)
+        elif isinstance(action.cost, AdditiveActionCost):
+            addend = action.cost.addend
+            if isinstance(addend, Constant):
+                lp.rule(f'cost({action_atom}, {int(addend.symbol)})', parameters_types)
+            elif isinstance(addend, CompoundTerm):
+                v = generate_varname(avoid=used_varnames)
+                cost_body = parameters_types + [self.tarski_functional_atom_to_lp_atom(addend, v)]
+                lp.rule(f'cost({action_atom}, {v})', cost_body)
+        else:
+            raise RuntimeError(f'Unknown action cost "{action.cost}"')
+
+    def create_action_atoms(self, action):
+        """ Return the rule head and action atom corresponding to a planning action.
+        The rule head might be different to the atom itself if e.g. we want to enforce choice rules, in which
+        case it will be "{ action_name(X) }". """
+        # Note that we need to capitalize the parameters of the action schema, as they are LP variables.
+        atom = self.lp_atom(action.name, [make_variable_name(v.symbol) for v in action.parameters], prefix='action')
+        return atom, atom
+
+    def add_directives(self, problem, lp):
+        return
 
     def process_formula(self, f: Formula):
         """ Process a given formula and return the corresponding LP rule body, along with declaring in the given LP
         any number of extra rules necessary to ensure equivalence of the body with the truth value of the formula.
         """
-        # ref = symref(f)  # At the moment not caching
-        # res = self.node_cache.get(ref, None)
-        # If the formula has been processed before and an auxiliary LP atom for it created, return that
-        # if res is not None:
-        #     return res
-
         if isinstance(f, Tautology):
             return []
 
@@ -136,6 +180,8 @@ class ReachabilityLPCompiler:
                 return [aux]
 
             elif f.connective == Connective.Not:
+                if not self.include_variable_inequalities:
+                    return [lp_tautology()]
                 assert len(f.subformulas) == 1
                 subf = f.subformulas[0]
                 if not isinstance(subf, Atom):
@@ -171,17 +217,17 @@ class ReachabilityLPCompiler:
         if isinstance(t, Variable):
             return make_variable_name(t.symbol)  # lp_atom_from_term(t)
         elif isinstance(t, Constant):
-            return t.symbol
+            return str(t.symbol)
 
         raise RuntimeError('Unexpected term "{}" with type "{}"'.format(t, type(t)))
 
-    def process_effect(self, lang, eff):
+    def process_effect(self, lang, eff, action_name):
         """ Process a given effect and return the corresponding LP rule (a pair with head and body). For instance a
         conditional effect "p -> q(X)" will be transformed into a head q(X) and a body p.
         Additionally, declare in the given LP any number of extra rules necessary to ensure equivalence of the body
         with the truth value of the effect conditions (i.e. this will be mostly necessary for conditional effects).
         """
-        assert isinstance(eff, (SingleEffect, UniversalEffect))
+        assert isinstance(eff, SingleEffect)
         if isinstance(eff, AddEffect):
             head = self.tarski_atom_to_lp_atom(eff.atom)
             condition = remove_quantifiers(lang, eff.condition, QuantifierEliminationMode.Forall)
@@ -191,14 +237,18 @@ class ReachabilityLPCompiler:
             return None, []  # Simply ignore the delete effects
 
         if isinstance(eff, FunctionalEffect):
-            if eff.lhs.symbol.symbol == 'total-cost':
-                return None, []  # We ignore total-cost effects
-            raise RuntimeError(f'ReachabilityLPCompiler cannot handle functional effects such as "{eff}"')
-
+            raise RuntimeError(
+                f'ReachabilityLPCompiler cannot handle functional effect "{eff}" in action "{action_name}"')
         raise RuntimeError(f'Unexpected effect "{eff}" with type "{type(eff)}"')
 
-    def tarski_atom_to_lp_atom(self, atom: Atom, prefix=''):
+    def tarski_atom_to_lp_atom(self, atom: Atom):
         return self.lp_atom(atom.predicate.symbol, [self.process_term(sub) for sub in atom.subterms], prefix='atom')
+
+    def tarski_functional_atom_to_lp_atom(self, term: CompoundTerm, value):
+        assert isinstance(value, (Constant, str))
+        args = [self.process_term(sub) for sub in term.subterms]
+        args.append(self.process_term(value) if isinstance(value, Constant) else value)
+        return self.lp_atom(term.symbol.name, args, prefix='atom')
 
     def lp_type_atom_from_term(self, t: Term):
         """ Return a LP atom with type information from a given term, e.g. of the form block(b) for a constant,
@@ -220,6 +270,12 @@ class ReachabilityLPCompiler:
 
 class VariableOnlyReachabilityLPCompiler(ReachabilityLPCompiler):
     """ A variation of the standard LP compiler that cares only about state variable, but not action, groundings. """
+
+    def __init__(self, problem: Problem, lp, include_variable_inequalities=False, include_action_costs=False):
+        if include_action_costs:
+            raise RuntimeError(f'Cannot generate a variable-only reachability LP that includes action costs')
+        super().__init__(problem, lp, include_variable_inequalities, include_action_costs=False)
+
     def process_action(self, action, lang, lp):
         # See & contrast with method in parent class
         # Construct the part of the body corresponding to the parameter types, e.g. "object(X), block(Y)"
@@ -229,7 +285,7 @@ class VariableOnlyReachabilityLPCompiler(ReachabilityLPCompiler):
         prec_body += self.process_formula(phi)
         # Now process the effects
         for eff in action.effects:
-            head, condeff_body = self.process_effect(lang, eff)
+            head, condeff_body = self.process_effect(lang, eff, action.name)
             if head is not None:
                 lp.rule(head, prec_body + condeff_body)
 
@@ -294,18 +350,18 @@ class Translator:
         self.inv = dict()
 
     def normalize(self, name: str, prefix=''):
-        """ Translate a given name and keep the translation """
-        translated = self.d.get(name, None)
-        if translated is None:
-            translated = sanitize(name)
-            if prefix:
-                translated = prefix + '_' + translated
-            if name in self.inv or translated in self.inv:
-                raise RuntimeError('Sanitization of STRIPS name for ASP purposes would create a name clash for key '
-                                   '"{}"'.format(name))
+        """ Translate a given name and store the translation """
+        prefix = prefix + '_' if prefix else ''
+        prefixed = prefix + name
 
-            if translated != name:
-                translated = self._insert(name, translated)
+        translated = self.d.get(prefixed, None)
+        if translated is None:
+            translated = prefix + sanitize(name)
+            if prefixed in self.inv or translated in self.inv:
+                raise RuntimeError(f'Sanitization of STRIPS name "{name}" for ASP purposes would create a name clash')
+
+            if translated != prefixed:
+                translated = self._insert(prefixed, translated)
         return translated
 
     def _insert(self, k, v):
@@ -321,12 +377,16 @@ class Translator:
 class LogicProgram:
     def __init__(self):
         self.rules = []
+        self.directives = []
 
     def rule(self, head, body=None):
         self.rules.append(_print_rule(head, body))
 
     def nrules(self):
         return len(self.rules)
+
+    def directive(self, directive):
+        self.directives.append(directive)
 
 
 class InFileLogicProgram:
@@ -351,8 +411,16 @@ def sanitize(name: str):
     return name.replace("-", "__")
 
 
-def _var(i=0, lowercase=False):
+def _var(i=0):
     """ Return a distinct variable name for each given value of i """
-    alphabet = "XYZABCDEFGHIJKLMNOPQRSTUFW"
-    res = alphabet[i] if i < len(alphabet) else "X{}".format(i)
-    return res.lower() if lowercase else res
+    alphabet = "XYZABCDEFGHIJKLMNOPQRSTUVW"
+    return alphabet[i] if i < len(alphabet) else "X{}".format(i)
+
+
+def generate_varname(avoid=None):
+    """ Return a distinct variable name for each given value of i """
+    for i in range(1000):
+        name = _var(i)
+        if name not in avoid:
+            return name
+    raise RuntimeError(f"Couldn't generate unused variable name")

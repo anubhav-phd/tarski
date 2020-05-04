@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Optional, List
 
+from ..fstrips.action import AdditiveActionCost
 from ..theories import load_theory, Theory
 from .common import load_tpl
 from ..model import ExtensionalFunctionDefinition
@@ -9,7 +10,7 @@ from ..syntax import Tautology, Contradiction, Atom, CompoundTerm, CompoundFormu
     Term, Variable, Constant, Formula, symref, BuiltinPredicateSymbol
 from ..syntax.sorts import parent, Interval, ancestors
 
-from ._fstrips.common import tarski_to_pddl_type, get_requirements_string, create_number_type
+from ._fstrips.common import tarski_to_pddl_type, get_requirements_string, create_number_type, uniformize_costs
 from ..fstrips import create_fstrips_problem, language, FunctionalEffect, AddEffect, DelEffect, IncreaseEffect,\
     UniversalEffect
 
@@ -23,7 +24,9 @@ from ._fstrips.reader import ParsingError
 class FstripsReader:
     """ A class designed to parse problems specified in PDDL / FSTRIPS. """
 
-    def __init__(self, raise_on_error=False, theories=None, lang=None, strict_with_requirements=True):
+    def __init__(self, raise_on_error=False, theories=None, lang=None,
+                 strict_with_requirements=True, case_insensitive=False,
+                 evaluator=None):
         """ Create a FSTRIPS reader.
 
         :param raise_on_error: Whether to raise a Tarski ParsingError on every syntax error detected by the parser.
@@ -31,13 +34,15 @@ class FstripsReader:
         :param lang: A FOL language where the problem is to be parsed. If none is provided, a new one will be created.
         :param strict_with_requirements: if False, the parser will be less strict with the PDDL requirement flags,
                                          and will load by default the necessary theories to process action costs.
+        :param case_insensitive: Whether to be strict with cases. If not, the whole PDDL file will be lowercased.
         """
         lang = language(theories=theories) if lang is None else lang
         if not strict_with_requirements:
             load_theory(lang, Theory.ARITHMETIC)
             create_number_type(lang)
-        self.problem = create_fstrips_problem(language=lang)
-        self.parser = FStripsParser(self.problem, raise_on_error)
+
+        self.problem = create_fstrips_problem(language=lang, evaluator=evaluator)
+        self.parser = FStripsParser(self.problem, raise_on_error, case_insensitive)
 
     def read_problem(self, domain, instance):
         self.parse_domain(domain)
@@ -51,9 +56,11 @@ class FstripsReader:
 
     def parse_domain(self, filename):
         self.parse_file(filename, 'domain')
+        uniformize_costs(self.problem)
 
     def parse_instance(self, filename):
         self.parse_file(filename, 'problem')
+        return self.problem
 
     def parse_string(self, string, start_rule):
         logging.debug('Parsing custom string from grammar rule "{}"'.format(start_rule))
@@ -151,8 +158,7 @@ def print_problem_constraints(problem):
 
 
 def print_metric(metric):
-    return '(:metric {type} {exp})'.format(type=metric.opt_type.value,
-                                           exp=print_term(metric.opt_expression))
+    return f'(:metric {metric.opt_type} {print_term(metric.opt_expression)})'
 
 
 def print_problem_metric(problem):
@@ -268,7 +274,7 @@ class FstripsWriter:
             name=a.name,
             parameters=print_variable_list(a.parameters),
             precondition=print_formula(a.precondition, base_indentation),
-            effect=print_effects(a.effects, base_indentation)
+            effect=print_effects(a.effects, a.cost, base_indentation)
         )
 
     def get_derived_predicates(self):
@@ -316,10 +322,15 @@ def print_formula(formula, indentation=0):
     raise RuntimeError("Unexpected element type: {}".format(formula))
 
 
-def print_effects(effects, indentation=0):
-    if not effects:
+def print_effects(effects, cost=None, indentation=0):
+    if not effects and cost is None:
         return "(and )"
-    return "(and\n{})".format("\n".join(print_effect(e, indentation + 1) for e in effects))
+    effects = [print_effect(e, indentation + 1) for e in effects]
+    if cost:  # Add the increase-effect corresponding to the action cost
+        assert isinstance(cost, AdditiveActionCost)
+        totalcost = cost.addend.language.get('total-cost')
+        effects.append(print_unconditional_effect(IncreaseEffect(totalcost(), cost.addend), indentation+1))
+    return "(and\n{})".format("\n".join(effects))
 
 
 def print_unconditional_effect(eff, indentation=0):

@@ -4,7 +4,7 @@ import copy
 
 from ...fstrips import hybrid
 from ...syntax import create_substitution, TermSubstitution
-from ...util import IndexDictionary
+from ...util import SymbolIndex
 from . import instantiation
 from .elements import process_expression, process_effect
 
@@ -15,7 +15,7 @@ class ReactionGrounder:
         self.problem = prob
         self.L = self.problem.language
         self.index = index
-        self.problem.ground_reactions = IndexDictionary()
+        self.problem.ground_reactions = SymbolIndex()
         self.schemas = list(self.problem.reactions.values())
         self.reactions_generated = 0
 
@@ -36,7 +36,7 @@ class ReactionGrounder:
             for values in itertools.product(*substs):
                 subst = create_substitution(syms, values)
 
-                op = TermSubstitution(self.L, subst)
+                op = TermSubstitution(subst)
 
                 g_cond = process_expression(self.L, react_schema.condition, op)
 

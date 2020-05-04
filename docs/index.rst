@@ -8,33 +8,26 @@ Tarski is written in Python and includes parsers for major modeling languages
 (e.g., `PDDL <https://en.wikipedia.org/wiki/Planning_Domain_Definition_Language>`_,
 `FSTRIPS <https://dl.acm.org/citation.cfm?id=566359>`_,
 `RDDL <https://en.wikipedia.org/wiki/Planning_Domain_Definition_Language#RDDL>`_),
-along with modules to perform other common tasks such as reachability analysis and
-grounding of first-order representations.
+along with modules to perform other common tasks such as logical transformations,
+reachability analysis, grounding of first-order representations and problem reformulations.
+
 
 
 .. toctree::
     :maxdepth: 2
-    :caption: Installation & Quickstart:
+    :caption: User Documentation
 
     installation.md
+    getting-started.rst
+    advanced-topics.rst
+    use-cases.rst
+    api.rst
+    limitations.md
 
 
 .. toctree::
-    :maxdepth: 2
-    :caption: A Tarski Primer:
+    :maxdepth: 1
+    :caption: Developing Tarski
 
-    notebooks/001_first_order_logics.ipynb
-    notebooks/002_fol_semantics.ipynb
-    notebooks/003_planning_problems.ipynb
-    notebooks/004_advanced_techniques.ipynb
-    notebooks/work_in_progress.ipynb
-
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Tarski Development:
-
-    development/development
-    development/documentation
-    development/releasing
-    development/design
+    development.rst
+    readme.md
