@@ -1,4 +1,6 @@
+import itertools
 from typing import Generator, Set
+
 from .. import errors as err
 
 
@@ -8,7 +10,7 @@ class Sort:
         but the same name). Hence, implementation-wise, we can hash and compare them based on name alone.
     """
     def __init__(self, name, language, builtin=False):
-        self._name = name
+        self.name = name
         self.language = language
         self._domain = set()
         self.builtin = builtin
@@ -28,10 +30,6 @@ class Sort:
 
     def __eq__(self, other):
         return self.name == other.name and self.language == other.language
-
-    @property
-    def name(self):
-        return self._name
 
     def contains(self, x):
         """ Return true iff the current sort contains a constant with the given value  """
@@ -56,7 +54,7 @@ class Sort:
         return len(self._domain)
 
     def dump(self):
-        return dict(name=self._name,
+        return dict(name=self.name,
                     domain=list(self._domain))  # Copy the list
 
     def extend(self, constant):
@@ -140,20 +138,20 @@ class Interval(Sort):
 
 
 def inclusion_closure(s: Sort) -> Generator[Sort, None, None]:
-    """ Return the set of all parents of the given sort s, including itself, as a generator """
+    """ Return the set of all parents of the given sort `s`, including itself, as a generator """
     while s is not None:
         yield s
         s = parent(s)
 
 
 def parent(s: Sort) -> Sort:
-    """ Returns the direct parent of the given sort, or None if it is the root sort "object" """
+    """ Return the direct parent of the given sort `s`, or None if `s` is the root sort "object" """
     assert s in s.language.immediate_parent
     return s.language.immediate_parent[s]
 
 
 def ancestors(s: Sort) -> Set[Sort]:
-    """ Return all ancestor along the sort hierarchy of the given sort """
+    """ Return the set of all ancestors of `s` along the sort hierarchy, but not `s` itself """
     assert s in s.language.ancestor_sorts
     return s.language.ancestor_sorts[s]
 
@@ -177,6 +175,17 @@ def float_encode_fn(x):
     return float(x)
 
 
+def build_the_bools(lang):
+    bools = lang.sort('Boolean')
+    # TODO: we really should be setting builtin to True, but at the moment this is undesirable, as in many places in
+    #       the code we seem to assume that "builtin" sorts are kind of "numeric" sorts, which leads us to try to do
+    #       things with the new Bool sort that cannot be done, e.g. to cast string object "True" to a value, etc.
+    # bools.builtin = True
+    lang.constant('True', bools)
+    lang.constant('False', bools)
+    return bools
+
+
 def build_the_naturals(lang):
     the_nats = Interval('Natural', lang, int_encode_fn, 0, 2 ** 32 - 1)
     the_nats.builtin = True
@@ -192,5 +201,26 @@ def build_the_integers(lang):
 def build_the_reals(lang):
     reals = Interval('Real', lang, float_encode_fn, -3.40282e+38, 3.40282e+38)
     reals.builtin = True
-    # the_reals.pi = scipy.constants.pi
     return reals
+
+
+def attach_arithmetic_sorts(lang):
+    real_t = lang.attach_sort(build_the_reals(lang), lang.ns.object)
+    int_t = lang.attach_sort(build_the_integers(lang), real_t)
+    _ = lang.attach_sort(build_the_naturals(lang), int_t)
+
+
+def compute_signature_bindings(signature):
+    """ Return an exhaustive list of all possible bindings compatible with the given signature, i.e.
+    list of sorts. """
+    domains = [s.domain() for s in signature]
+    for binding in itertools.product(*domains):
+        yield binding
+
+
+def compute_direct_sort_map(lang):
+    """ Return a map from each sort s to a list of the objects that have s as their direct sort
+     (i.e. ignoring parent sorts). """
+    res = {s: [] for s in lang.sorts if not s.builtin}
+    _ = [res[o.sort].append(o) for o in lang.constants()]
+    return res

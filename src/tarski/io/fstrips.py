@@ -2,13 +2,15 @@ import logging
 from collections import defaultdict
 from typing import Optional, List
 
+from ..fstrips.action import AdditiveActionCost
+from ..theories import load_theory, Theory
 from .common import load_tpl
 from ..model import ExtensionalFunctionDefinition
 from ..syntax import Tautology, Contradiction, Atom, CompoundTerm, CompoundFormula, QuantifiedFormula, \
-    Term, Variable, Constant, Formula, symref
+    Term, Variable, Constant, Formula, symref, BuiltinPredicateSymbol
 from ..syntax.sorts import parent, Interval, ancestors
 
-from ._fstrips.common import tarski_to_pddl_type, get_requirements_string
+from ._fstrips.common import tarski_to_pddl_type, get_requirements_string, create_number_type, uniformize_costs
 from ..fstrips import create_fstrips_problem, language, FunctionalEffect, AddEffect, DelEffect, IncreaseEffect,\
     UniversalEffect
 
@@ -20,11 +22,27 @@ from ._fstrips.reader import ParsingError
 
 
 class FstripsReader:
+    """ A class designed to parse problems specified in PDDL / FSTRIPS. """
 
-    def __init__(self, raise_on_error=False, theories=None, lang=None):
+    def __init__(self, raise_on_error=False, theories=None, lang=None,
+                 strict_with_requirements=True, case_insensitive=False,
+                 evaluator=None):
+        """ Create a FSTRIPS reader.
+
+        :param raise_on_error: Whether to raise a Tarski ParsingError on every syntax error detected by the parser.
+        :param theories: A list with the logic theories the language is expected to have.
+        :param lang: A FOL language where the problem is to be parsed. If none is provided, a new one will be created.
+        :param strict_with_requirements: if False, the parser will be less strict with the PDDL requirement flags,
+                                         and will load by default the necessary theories to process action costs.
+        :param case_insensitive: Whether to be strict with cases. If not, the whole PDDL file will be lowercased.
+        """
         lang = language(theories=theories) if lang is None else lang
-        self.problem = create_fstrips_problem(language=lang)
-        self.parser = FStripsParser(self.problem, raise_on_error)
+        if not strict_with_requirements:
+            load_theory(lang, Theory.ARITHMETIC)
+            create_number_type(lang)
+
+        self.problem = create_fstrips_problem(language=lang, evaluator=evaluator)
+        self.parser = FStripsParser(self.problem, raise_on_error, case_insensitive)
 
     def read_problem(self, domain, instance):
         self.parse_domain(domain)
@@ -32,20 +50,22 @@ class FstripsReader:
         return self.problem
 
     def parse_file(self, filename, start_rule):
-        logging.info('Parsing filename "{}" from grammar rule "{}"'.format(filename, start_rule))
+        logging.debug('Parsing filename "{}" from grammar rule "{}"'.format(filename, start_rule))
         domain_parse_tree, _ = self.parser.parse_file(filename, start_rule)
         self.parser.visit(domain_parse_tree)
 
     def parse_domain(self, filename):
         self.parse_file(filename, 'domain')
+        uniformize_costs(self.problem)
 
     def parse_instance(self, filename):
         self.parse_file(filename, 'problem')
+        return self.problem
 
     def parse_string(self, string, start_rule):
-        logging.info('Parsing custom string from grammar rule "{}"'.format(start_rule))
+        logging.debug('Parsing custom string from grammar rule "{}"'.format(start_rule))
         parse_tree, _ = self.parser.parse_string(string, start_rule)
-        logging.info("Processing AST")
+        logging.debug("Processing AST")
         return self.parser.visit(parse_tree)
 
 
@@ -138,8 +158,7 @@ def print_problem_constraints(problem):
 
 
 def print_metric(metric):
-    return '(:metric {type} {exp})'.format(type=metric.opt_type.value,
-                                           exp=print_term(metric.opt_expression))
+    return f'(:metric {metric.opt_type} {print_term(metric.opt_expression)})'
 
 
 def print_problem_metric(problem):
@@ -255,7 +274,7 @@ class FstripsWriter:
             name=a.name,
             parameters=print_variable_list(a.parameters),
             precondition=print_formula(a.precondition, base_indentation),
-            effect=print_effects(a.effects, base_indentation)
+            effect=print_effects(a.effects, a.cost, base_indentation)
         )
 
     def get_derived_predicates(self):
@@ -273,11 +292,15 @@ def build_signature_string(domain):
     if not domain:
         return ""
 
-    return " ".join("?x{} - {}".format(i, tarski_to_pddl_type(t)) for i, t in enumerate(domain, 1))
+    return " ".join(f"{print_variable_name(f'x{i}')} - {tarski_to_pddl_type(t)}" for i, t in enumerate(domain, 1))
+
+
+def print_variable_name(name: str):
+    return name if name.startswith("?") else f'?{name}'
 
 
 def print_variable_list(parameters):
-    return " ".join("?{} - {}".format(p.symbol, p.sort.name) for p in parameters)
+    return " ".join(f"{print_variable_name(p.symbol)} - {p.sort.name}" for p in parameters)
 
 
 def print_formula(formula, indentation=0):
@@ -299,10 +322,15 @@ def print_formula(formula, indentation=0):
     raise RuntimeError("Unexpected element type: {}".format(formula))
 
 
-def print_effects(effects, indentation=0):
-    if not effects:
+def print_effects(effects, cost=None, indentation=0):
+    if not effects and cost is None:
         return "(and )"
-    return "(and\n{})".format("\n".join(print_effect(e, indentation + 1) for e in effects))
+    effects = [print_effect(e, indentation + 1) for e in effects]
+    if cost:  # Add the increase-effect corresponding to the action cost
+        assert isinstance(cost, AdditiveActionCost)
+        totalcost = cost.addend.language.get('total-cost')
+        effects.append(print_unconditional_effect(IncreaseEffect(totalcost(), cost.addend), indentation+1))
+    return "(and\n{})".format("\n".join(effects))
 
 
 def print_unconditional_effect(eff, indentation=0):
@@ -339,7 +367,7 @@ def print_effect(eff, indentation=0):
 def print_term(term):
     assert isinstance(term, Term)
     if isinstance(term, Variable):
-        return "?{}".format(term.symbol)
+        return print_variable_name(term.symbol)
     elif isinstance(term, CompoundTerm):
         return "({} {})".format(term.symbol.symbol, print_term_list(term.subterms))
     elif isinstance(term, Constant):
@@ -347,9 +375,16 @@ def print_term(term):
     raise RuntimeError("Unexpected element type: {}".format(term))
 
 
-def print_atom(atom):
+def print_atom(atom: Atom):
     assert isinstance(atom, Atom)
-    return "({} {})".format(atom.predicate.symbol, print_term_list(atom.subterms))
+    symbol = atom.predicate.symbol
+    subterms = print_term_list(atom.subterms)
+
+    if symbol == BuiltinPredicateSymbol.NE:
+        # The built-in != needs a special treatment to be printed as (not (= ...))
+        return f"(not (= {subterms}))"
+
+    return f"({symbol} {subterms})"
 
 
 def print_term_list(terms):

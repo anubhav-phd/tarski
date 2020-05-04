@@ -3,7 +3,7 @@ import itertools
 
 from ...fstrips.contingent import Sensor
 from ...syntax import create_substitution, TermSubstitution
-from ...util import IndexDictionary
+from ...util import SymbolIndex
 from .elements import process_expression
 from . import instantiation
 
@@ -14,7 +14,7 @@ class SensorGrounder:
         self.problem = prob
         self.L = self.problem.language
         self.index = index
-        self.problem.ground_sensors = IndexDictionary()
+        self.problem.ground_sensors = SymbolIndex()
         self.schemas = list(self.problem.sensors.values())
         self.sensors_generated = 0
 
@@ -26,11 +26,11 @@ class SensorGrounder:
         # this NEEDS to be refactored, so we ground action elements in a more
         # moudular and component oriented fashion
         for act_schema in self.schemas:
-            K, syms, substs = instantiation.enumerate_groundings(self.L, act_schema.parameters)
+            K, syms, substs = instantiation.enumerate_groundings(act_schema.parameters)
             for values in itertools.product(*substs):
                 subst = create_substitution(syms, values)
 
-                op = TermSubstitution(self.L, subst)
+                op = TermSubstitution(subst)
                 g_prec = process_expression(self.L, act_schema.condition, op)
                 g_obs = process_expression(self.L, act_schema.obs, op)
                 self.problem.ground_sensors.add(Sensor(self.L, act_schema.name, [], g_prec, g_obs))

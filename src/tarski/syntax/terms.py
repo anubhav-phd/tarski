@@ -140,8 +140,6 @@ class Variable(Term):
     def __init__(self, symbol: str, sort: Sort):
         self.symbol = symbol
         self._sort = sort
-        self.sort.language.language_components_frozen = True
-        # TODO VALIDATE
 
     @property
     def language(self):
@@ -152,9 +150,10 @@ class Variable(Term):
         return self._sort
 
     def __str__(self):
-        return '{}/{}'.format(self.symbol, self.sort.name)
+        return str(self.symbol)
 
-    __repr__ = __str__
+    def __repr__(self):
+        return '{} ({})'.format(self.symbol, self.sort.name)
 
     def hash(self):
         return hash((self.symbol, self.sort.name))
@@ -189,7 +188,6 @@ class CompoundTerm(Term):
                     raise err.SortMismatch(self.symbol, subterms[k], s)
                 processed_st.append(s_k)
         self.subterms = tuple(processed_st)
-        self.symbol.language.language_components_frozen = True
 
     @property
     def language(self):
@@ -200,7 +198,7 @@ class CompoundTerm(Term):
         return self.symbol.codomain
 
     def __str__(self):
-        return '{}({})'.format(self.symbol.symbol, ', '.join([str(t) for t in self.subterms]))
+        return '{}({})'.format(self.symbol.symbol, ', '.join(str(t) for t in self.subterms))
 
     __repr__ = __str__
 
@@ -278,8 +276,6 @@ class IfThenElse(Term):
 
         self.subterms = tuple(subterms)
 
-        self.symbol.language.language_components_frozen = True
-
     @property
     def language(self):
         return self.symbol.language
@@ -308,16 +304,19 @@ def ite(c, t1: Term, t2: Term):
 
 
 class Constant(Term):
-    def __init__(self, symbol, sort: Sort):
-        self.symbol = symbol
+    def __init__(self, name, sort: Sort):
+        self.name = name
         self._sort = sort
         # symbol validation
         if not self._sort.builtin:
             # construction of constants extends the domain of sorts
             self._sort.extend(self)
         else:
-            self.symbol = self._sort.cast(self.symbol)
-        self.sort.language.language_components_frozen = True
+            self.name = self._sort.cast(self.name)
+
+    @property
+    def symbol(self):
+        return self.name
 
     @property
     def language(self):
@@ -328,13 +327,13 @@ class Constant(Term):
         return self._sort
 
     def __str__(self):
-        return '{}'.format(self.symbol)
+        return str(self.name)
 
     def __repr__(self):
-        return '{} ({})'.format(self.symbol, self.sort.name)
+        return '{} ({})'.format(self.name, self.sort.name)
 
     def hash(self):
-        return hash((self.symbol, self.sort))
+        return hash((self.name, self.sort))
 
     def is_syntactically_equal(self, other):
-        return self.__class__ is other.__class__ and self.symbol == other.symbol and self.sort == other.sort
+        return self.__class__ is other.__class__ and self.name == other.name and self.sort == other.sort

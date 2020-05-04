@@ -4,7 +4,7 @@ import copy
 
 from ...syntax import create_substitution, TermSubstitution
 from ... import fstrips as fs
-from ...util import IndexDictionary
+from ...util import SymbolIndex
 from . import instantiation
 from .elements import process_expression, process_effect
 
@@ -15,7 +15,7 @@ class ActionGrounder:
         self.problem = prob
         self.L = self.problem.language
         self.index = index
-        self.problem.ground_actions = IndexDictionary()
+        self.problem.ground_actions = SymbolIndex()
         self.schemas = list(self.problem.actions.values())
         self.actions_generated = 0
 
@@ -24,10 +24,10 @@ class ActionGrounder:
 
     def calculate_actions(self):
         for act_schema in self.schemas:
-            k, syms, substs = instantiation.enumerate_groundings(self.L, act_schema.parameters)
+            k, syms, substs = instantiation.enumerate_groundings(act_schema.parameters)
             for values in itertools.product(*substs):
                 subst = create_substitution(syms, values)
-                op = TermSubstitution(self.L, subst)
+                op = TermSubstitution(subst)
                 g_prec = process_expression(self.L, act_schema.precondition, op)
                 g_effs = []
                 for eff in act_schema.effects:

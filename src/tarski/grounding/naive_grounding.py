@@ -3,12 +3,13 @@
 """
 import itertools
 
+from ..grounding.ops import approximate_symbol_fluency
 from ..syntax import Constant, Variable, CompoundTerm, Atom, create_substitution, term_substitution,\
     termlists_are_equal, termlist_hash
 from ..errors import DuplicateDefinition
 from .errors import UnableToGroundError
-from .common import approximate_symbol_fluency, StateVariableLite
-from ..util import IndexDictionary
+from .common import StateVariableLite
+from ..util import SymbolIndex
 from ..fstrips.visitors import FluentSymbolCollector, FluentHeuristic
 
 
@@ -55,12 +56,9 @@ def create_all_possible_state_variables(fluent_terms):
     """ Creates an index with all possible state variables by brute-force
         enumeration.
     """
-    variables = IndexDictionary()
+    variables = SymbolIndex()
 
     for ref in fluent_terms:
-        # @TODO: Work in Progress and we will need to iterate over this a bit
-        # @TODO: Sort fluent symbols according to the number of variable subterms
-        # L = ref.language
         instantiations = []
         for st in ref.expr.subterms:
             if isinstance(st, Constant):
@@ -105,7 +103,7 @@ class StateVariable:
     @property
     def ground(self):
         subst = create_substitution(self.term.subterms, self.instantiation)
-        return term_substitution(self.head.language, self.term, subst)
+        return term_substitution(self.term, subst)
 
 
 class NaiveGroundingStrategy:
@@ -113,12 +111,15 @@ class NaiveGroundingStrategy:
     exhaustive enumeration of all possible subsitutions of the representation variables.
     Note: This is a lightweight version of the ProblemGrounding class above, hoping that it can eventually replace it.
     """
-    def __init__(self, problem):
+    def __init__(self, problem, ignore_symbols=None):
         self.problem = problem
         self.fluent_symbols, self.static_symbols = approximate_symbol_fluency(problem)
+        if ignore_symbols:  # Remove undesired symbols if necessary
+            self.fluent_symbols = {s for s in self.fluent_symbols if s.name not in ignore_symbols}
+            self.static_symbols = {s for s in self.static_symbols if s.name not in ignore_symbols}
 
     def ground_state_variables(self):
-        """ Create an index all state variables of the problem by exhaustively grounding all predicate and function
+        """ Create and index all state variables of the problem by exhaustively grounding all predicate and function
         symbols that are considered to be fluent with respect to the problem constants. Thus, if the problem has one
         fluent predicate "p" and one static predicate "q", and constants "a", "b", "c", the result of this operation
         will be the state variables "p(a)", "p(b)" and "p(c)".
@@ -126,8 +127,13 @@ class NaiveGroundingStrategy:
         return ground_symbols_exhaustively(self.fluent_symbols)
 
     def ground_actions(self):
-        """ """
-        raise NotImplementedError()
+        """  Return a dictionary mapping each action schema of the problem to the set of parameter groundings that
+        make that schema a reachable ground action. """
+        groundings = dict()
+        for aname, action in self.problem.actions.items():
+            domains = [p.sort.domain() for p in action.parameters]
+            groundings[aname] = list(itertools.product(*domains))
+        return groundings
 
     def __str__(self):
         return 'NaiveGroundingStrategy["{}"]'.format(self.problem.name)
@@ -138,7 +144,7 @@ class NaiveGroundingStrategy:
 def ground_symbols_exhaustively(symbols):
     """ Creates an index with all possible groundings of the given predicate and function symbols
     in the given language """
-    variables = IndexDictionary()
+    variables = SymbolIndex()
 
     for symbol in symbols:
         # We need to consider full sort for predicates, domain only for functions

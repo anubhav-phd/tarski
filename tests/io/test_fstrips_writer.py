@@ -1,27 +1,60 @@
 import tempfile
+from typing import Optional, List
 
 import tarski.fstrips as fs
+from tarski.benchmarks.blocksworld import generate_fstrips_blocksworld_problem
+from tarski.benchmarks.counters import get_counters_elements, generate_fstrips_counters_problem
 from tarski.fstrips import AddEffect, DelEffect, FunctionalEffect, UniversalEffect
 from tarski.io import FstripsWriter
-from tarski.io.fstrips import print_effects, print_effect, print_objects, print_metric
+from tarski.io._fstrips.common import get_requirements_string
+from tarski.io.fstrips import print_effects, print_effect, print_objects, print_metric, print_formula, print_term
+from tarski.syntax import forall, exists, Constant
+from tarski.theories import Theory
 
-from tests.common.blocksworld import generate_small_fstrips_bw_problem
 from tests.common import parcprinter
+from tests.io.common import reader
 from ..common.gridworld import generate_small_gridworld
 
 
-def write_problem(problem):
+def write_problem(problem, domain_constants: Optional[List[Constant]] = None):
     domain_filename = tempfile.NamedTemporaryFile(delete=True)
     instance_filename = tempfile.NamedTemporaryFile(delete=True)
     writer = FstripsWriter(problem)
     writer.write(domain_filename=domain_filename.name,
-                 instance_filename=instance_filename.name)
+                 instance_filename=instance_filename.name,
+                 domain_constants=domain_constants)
+    return domain_filename, instance_filename
 
 
 def get_bw_elements():
-    problem = generate_small_fstrips_bw_problem()
+    problem = generate_fstrips_blocksworld_problem()
     loc, clear, b1, table = problem.language.get("loc", "clear", "b1", "table")
     return problem, loc, clear, b1, table
+
+
+def test_formula_writing1():
+    problem, loc, clear, b1, table = get_bw_elements()
+    lang = problem.language
+
+    assert print_formula(clear(b1)) == "(clear b1)"
+    assert print_formula(loc(b1) == table) == "(= (loc b1) table)"
+    assert print_formula(loc(b1) != table) == "(not (= (loc b1) table))"
+
+    assert print_formula(clear(b1) | clear(table)) == "(or (clear b1) (clear table))"
+
+    b = lang.variable('B', lang.ns.block)
+    assert print_formula(forall(b, clear(b))) == "(forall (?B - block) (clear ?B))"
+    assert print_formula(exists(b, clear(b))) == "(exists (?B - block) (clear ?B))"
+
+
+def test_formula_writing2():
+    problem, lang, value, max_int, c1, c2 = get_counters_elements(ncounters=2)
+
+    assert print_term(value(c1)) == "(value c1)"
+
+    assert print_formula(value(c1) <= max_int()) == '(<= (value c1) (max_int ))'
+    assert print_formula(value(c1) > value(c2)) == '(> (value c1) (value c2))'
+    assert print_formula(value(c1) != 0) == '(not (= (value c1) 0))'
 
 
 def test_effect_writing():
@@ -60,7 +93,7 @@ def test_objects_writing():
 
 
 def test_metric_writing():
-    lang = fs.language('lang')
+    lang = fs.language('lang', theories=[Theory.ARITHMETIC])
     cost = lang.function('total-cost', lang.Real)
     metric = fs.OptimizationMetric(cost(), fs.OptimizationType.MINIMIZE)
     metric_string = print_metric(metric)
@@ -73,8 +106,12 @@ def test_gridworld_writing():
 
 
 def test_blocksworld_writing():
-    problem, _, _, _, _ = get_bw_elements()
-    write_problem(problem)
+    problem, _, _, _, table = get_bw_elements()
+    domf, instf = write_problem(problem, domain_constants=[table])
+
+    # Make sure that the printed-out problem can be parsed again
+    problem2 = reader().read_problem(domf.name, instf.name)
+    assert len(problem.actions) == len(problem2.actions)  # Some silly checks
 
 
 def test_blocksworld_writing_with_different_constants():
@@ -96,11 +133,15 @@ def test_blocksworld_writing_with_different_constants():
     )""" in instance_model_string
 
 
-def test_action_costs_numeric_fluents_requirements():
+def test_requirements_string():
     problem = parcprinter.create_small_task()
-    writer = FstripsWriter(problem)
 
     # action costs should be required if there is a metric defined.
-    domain_string = writer.print_domain()
-    assert 'numeric-fluents' not in domain_string
-    assert 'action-costs' in domain_string
+    assert sorted(get_requirements_string(problem)) == [':action-costs', ':equality', ':numeric-fluents', ':typing']
+
+    problem, loc, clear, b1, table = get_bw_elements()
+    assert sorted(get_requirements_string(problem)) == [':equality', ':typing']
+
+    problem = generate_fstrips_counters_problem()
+    assert sorted(get_requirements_string(problem)) == [':equality', ':numeric-fluents', ':typing']
+

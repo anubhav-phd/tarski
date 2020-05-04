@@ -1,13 +1,15 @@
 import pytest
 
+import tarski.benchmarks.blocksworld
 from tarski import fstrips as fs
 from tarski.syntax import *
+from tarski.theories import Theory
 
 from ..common import blocksworld
 
 
 def test_action_creation():
-    lang = blocksworld.generate_small_fstrips_bw_language()
+    lang = tarski.benchmarks.blocksworld.generate_fstrips_bw_language()
 
     b = lang.variable('b', 'block')
     to = lang.variable('to', 'place')
@@ -41,7 +43,7 @@ def test_functional_effect_valid_creation():
 
 
 def test_increase_effect_valid_creation():
-    lang = fs.language('lang')
+    lang = fs.language('lang', theories=[Theory.EQUALITY, Theory.ARITHMETIC])
     lang.total_cost = lang.function('total-cost', lang.Real)
     eff = fs.IncreaseEffect(lang.total_cost(), 5)
 

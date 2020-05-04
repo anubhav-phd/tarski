@@ -2,10 +2,10 @@
 import itertools
 
 from ...syntax import QuantifiedFormula, Quantifier, create_substitution
-from ...syntax.transform import TermSubstitution, UniversalQuantifierElimination, NegatedBuiltinAbsorption, \
-    CNFTransformation
+from ...syntax.transform import TermSubstitution, NegatedBuiltinAbsorption, CNFTransformation,\
+    QuantifierEliminationMode, remove_quantifiers
 from ...syntax.ops import all_variables
-from ...util import IndexDictionary
+from ...util import SymbolIndex
 from . import instantiation
 from .elements import process_expression
 
@@ -16,7 +16,7 @@ class ConstraintGrounder:
         self.problem = prob
         self.L = self.problem.language
         self.index = index
-        self.problem.ground_constraints = IndexDictionary()
+        self.problem.ground_constraints = SymbolIndex()
         self.schemas = list(self.problem.constraints)
         self.constraints_generated = 0
 
@@ -27,11 +27,11 @@ class ConstraintGrounder:
 
         for const_schema in self.schemas:
             # 1. Collect set of free variables in the constraint
-            const_schema = UniversalQuantifierElimination.rewrite(self.L, const_schema).universal_free
-            K, syms, substs = instantiation.enumerate_groundings(self.L, all_variables(const_schema))
+            const_schema = remove_quantifiers(self.L, const_schema, QuantifierEliminationMode.Forall)
+            K, syms, substs = instantiation.enumerate_groundings(all_variables(const_schema))
             for values in itertools.product(*substs):
                 subst = create_substitution(syms, values)
-                op = TermSubstitution(self.L, subst)
+                op = TermSubstitution(subst)
                 g_const = process_expression(self.L, const_schema, op)
                 # Simplification steps
                 s0 = NegatedBuiltinAbsorption.rewrite(self.L, g_const)

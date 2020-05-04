@@ -1,6 +1,5 @@
 import itertools
 import copy
-import numpy as np
 
 from ...syntax import Term, AggregateCompoundTerm, CompoundTerm, Constant, Variable, IfThenElse, create_substitution, \
     term_substitution
@@ -8,6 +7,7 @@ from ...syntax.algebra import Matrix
 from ... import errors as err
 from ... grounding.naive import instantiation
 from ..builtins import BuiltinFunctionSymbol, get_arithmetic_binary_functions
+from ... import modules
 
 
 def sumterm(*args):
@@ -59,11 +59,11 @@ def summation(*args):
         variables.append(x)
 
     L = expr.language
-    _, syms, substs = instantiation.enumerate_groundings(L, list(variables))
+    _, syms, substs = instantiation.enumerate_groundings(list(variables))
     processed_expr = []
     for values in itertools.product(*substs):
         subst = create_substitution(syms, values)
-        processed_expr.append(term_substitution(L, expr, subst))
+        processed_expr.append(term_substitution(expr, subst))
 
     lhs = processed_expr[0]
     for k in range(1, len(processed_expr)):
@@ -89,11 +89,11 @@ def product(*args):
         variables.append(x)
 
     L = expr.language
-    _, syms, substs = instantiation.enumerate_groundings(L, list(variables))
+    _, syms, substs = instantiation.enumerate_groundings(list(variables))
     processed_expr = []
     for values in itertools.product(*substs):
         subst = create_substitution(syms, values)
-        processed_expr.append(term_substitution(L, expr, subst))
+        processed_expr.append(term_substitution(expr, subst))
 
     lhs = processed_expr[0]
     for k in range(1, len(processed_expr)):
@@ -150,6 +150,7 @@ def one(sort):
 
 
 def simplify(expr: Term) -> Term:
+    np = modules.import_numpy()
     if isinstance(expr, Constant):
         return expr
     elif isinstance(expr, Variable):

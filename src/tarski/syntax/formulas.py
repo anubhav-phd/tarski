@@ -26,6 +26,10 @@ class Quantifier(Enum):
         return self.name.lower()
 
 
+def negate_quantifier(q: Quantifier):
+    return Quantifier.Exists if q == Quantifier.Forall else Quantifier.Forall
+
+
 class Formula:
     """ A first-order logical formula. """
     def __str__(self):
@@ -106,7 +110,7 @@ class CompoundFormula(Formula):
     def __str__(self):
         if self.connective == Connective.Not:
             assert len(self.subformulas) == 1
-            return "{} ({})".format(self.connective, str(self.subformulas[0]))
+            return "({} {})".format(self.connective, str(self.subformulas[0]))
 
         inner = " {} ".format(self.connective).join(str(f) for f in self.subformulas)
         return "({})".format(inner)
@@ -118,7 +122,13 @@ class CompoundFormula(Formula):
                self.subformulas == other.subformulas
 
     def __hash__(self):
-        return hash((self.__class__, self.connective, self.subformulas))
+        element_hashes = [self.__class__, self.connective]
+        # TODO: formulas need to be flattened if we want to hash them,
+        # it would be good to check if there is a better way of flattening
+        # than this
+        for phi in self.subformulas:
+            element_hashes += [hash(phi)]
+        return hash(tuple(element_hashes))
 
 
 class QuantifiedFormula(Formula):
@@ -160,6 +170,8 @@ def _to_binary_tree(args, connective):
 
 
 def _create_compound(args, connective, flat):
+    if len(args) == 1:  # Handle gracefully the case of a single-atom compound formula
+        return args[0]
     if flat:
         return CompoundFormula(connective, args)
     return _to_binary_tree(args, connective)
@@ -196,24 +208,30 @@ def is_neg(phi: Formula):
 
 
 def implies(phi, psi):
+    """ Create the implication phi -> psi """
     return lor(neg(phi), psi)
 
 
 def equiv(phi, psi):
-    # MRJ: I choose the form below in the code over
-    #
-    # lor(land(phi,psi), land(neg(psi),neg(phi)))
-    #
-    # as I find it easier to transform into a
-    # given normal form.
+    """ Create the bi-implication phi <-> psi """
     return land(implies(phi, psi), implies(psi, phi))
 
 
 def forall(*args):
+    """ Create a universally-quantified formula. The argument list needs to be of the form (v1, v2, ..., vn, f),
+    where v_i are the variables and f is the quantified formula. To represent the formula "forall x, y x < y",
+    we would use:
+    >>> forall(x, y, x<y)
+    """
     return _quantified(Quantifier.Forall, *args)
 
 
 def exists(*args):
+    """ Create an existentially-quantified formula. The argument list needs to be of the form (v1, v2, ..., vn, f),
+    where v_i are the variables and f is the quantified formula. To represent the formula "exists x, y such that x < y",
+    we would use:
+    >>> exists(x, y, x<y)
+    """
     return _quantified(Quantifier.Exists, *args)
 
 
@@ -274,7 +292,7 @@ class Atom(Formula):
                 raise err.SortMismatch(arg, arg.sort, expected_sort)
 
     def __str__(self):
-        return '{}({})'.format(self.predicate.symbol, ','.join([str(t) for t in self.subterms]))
+        return '{}({})'.format(self.predicate.symbol, ','.join(str(t) for t in self.subterms))
     __repr__ = __str__
 
     def __eq__(self, other):
@@ -292,8 +310,7 @@ class VariableBinding:
         variables = variables or []
         # An (ordered) map between variable name and the variable itself:
         self.variables = OrderedDict((v.symbol, v) for v in variables)
-        self._idx = 0
-        self._v_values = list(self.variables.values())
+        self._v_values = variables[:]
         self.index_ = {v.symbol: i for i, v in enumerate(variables)}
 
     def __len__(self):
@@ -334,12 +351,8 @@ class VariableBinding:
         return list(self.variables.values())
 
     def __iter__(self):
-        self._v_values = [v for _, v in self.variables.items()]
-        self._idx = 0
-        return self
+        yield from self.variables.values()
 
-    def __next__(self):
-        if self._idx == len(self._v_values):
-            raise StopIteration()
-        self._idx += 1
-        return self._v_values[self._idx - 1]
+    def __str__(self):
+        return f"Variables({','.join(map(str, self._v_values))})"
+    __repr__ = __str__

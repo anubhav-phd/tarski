@@ -3,8 +3,7 @@
 """
 from enum import Enum
 
-from pyrddl.parser import RDDLParser
-
+from .. import modules
 from .common import load_tpl
 from ..fol import FirstOrderLanguage
 from ..syntax import implies, land, lor, neg, Connective, Quantifier, CompoundTerm, Interval, Atom, IfThenElse, \
@@ -218,10 +217,11 @@ class Reader:
         self.parameters = Parameters()
         self.x0 = None
 
-    def _load_rddl_model(self, filename):
+    @staticmethod
+    def _load_rddl_model(filename):
         with open(filename, 'r') as input_file:
             rddl = input_file.read()
-        parser = RDDLParser()
+        parser = modules.import_pyrddl_parser()()
         parser.build()
         # parse RDDL
         return parser.parse(rddl)
@@ -443,7 +443,7 @@ class Writer:
         return ', '.join([str(r) for r in self.task.requirements])
 
     def get_types(self):
-        from tarski.syntax.sorts import parent
+        from ..syntax.sorts import parent
         type_decl_list = []
         for S in self.task.L.sorts:
             if S.builtin or S.name == 'object':
@@ -455,7 +455,8 @@ class Writer:
             self.need_obj_decl += [S]
         return '\n'.join(type_decl_list)
 
-    def get_type(self, fl):
+    @staticmethod
+    def get_type(fl):
         if isinstance(fl, Atom):
             return 'bool'
         try:
@@ -463,7 +464,8 @@ class Writer:
         except KeyError:
             return fl.symbol.codomain.name
 
-    def get_signature(self, fl):
+    @staticmethod
+    def get_signature(fl):
         if isinstance(fl, CompoundTerm):
             sig = fl.symbol.signature
             head = sig[0]

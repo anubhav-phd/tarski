@@ -1,5 +1,4 @@
-import numpy as np
-
+from ... import modules
 from ...syntax import Term, Constant
 from ...syntax.sorts import Sort
 from ... import errors as err
@@ -7,9 +6,11 @@ from ... import errors as err
 
 class Matrix(Term):
     def __init__(self, arraylike, sort: Sort):
+        np = modules.import_numpy()
         self.matrix = np.array(arraylike, dtype=np.dtype(object))
         self._sort = sort
         # verify and cast
+        # pylint: disable=unpacking-non-sequence
         N, M = self.matrix.shape
         for i in range(N):
             for j in range(M):
@@ -47,6 +48,7 @@ class Matrix(Term):
     __repr__ = __str__
 
     def hash(self):
+        # pylint: disable=unpacking-non-sequence
         N, M = self.matrix.shape
         syms = []
         for i in range(N):
@@ -57,6 +59,7 @@ class Matrix(Term):
     def is_syntactically_equal(self, other):
         if self.__class__ is not other.__class__ or self.matrix.shape != other.matrix.shape:
             return False
+        # pylint: disable=unpacking-non-sequence
         N, M = self.matrix.shape
         for i in range(N):
             for j in range(M):

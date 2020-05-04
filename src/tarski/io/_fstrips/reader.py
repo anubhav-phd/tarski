@@ -8,9 +8,9 @@ import logging
 from antlr4 import FileStream, CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 
-from .common import parse_number, process_requirements, create_sort
+from .common import parse_number, process_requirements, create_sort, process_cost_effects, LowerCasingStreamWrapper
 from ...errors import SyntacticError
-from ...fstrips import DelEffect, AddEffect, FunctionalEffect, UniversalEffect, OptimizationMetric
+from ...fstrips import DelEffect, AddEffect, FunctionalEffect, UniversalEffect, OptimizationMetric, OptimizationType
 from ...syntax import CompoundFormula, Connective, neg, Tautology, implies, exists, forall, Term, Interval
 from ...syntax.builtins import get_predicate_from_symbol, get_function_from_symbol
 from ...syntax.formulas import VariableBinding
@@ -24,6 +24,12 @@ class FStripsParser(fstripsVisitor):
     """
     The parser assumes that the domain file is visited _before_ the instance file
     """
+    def __init__(self, problem, raise_on_error=False, case_insensitive=False):
+        self.problem = problem
+        self.error_handler = ExceptionRaiserListener() if raise_on_error else None
+        self.case_insensitive = case_insensitive
+        self.current_binding = None
+        self.requirements = set()
 
     def parse_string(self, string, start_rule='pddlDoc'):
         """ Parse a given string starting from a given grammar rule """
@@ -31,7 +37,10 @@ class FStripsParser(fstripsVisitor):
 
     def parse_file(self, filename, start_rule='pddlDoc'):
         """ Parse a given filename starting from a given grammar rule """
-        return self._parse_stream(FileStream(filename, encoding='utf-8'), start_rule)
+        stream = FileStream(filename, encoding='utf-8')
+        if self.case_insensitive:
+            stream = LowerCasingStreamWrapper(stream)
+        return self._parse_stream(stream, start_rule)
 
     def _parse_stream(self, filestream, start_rule='pddlDoc'):
         lexer = self._configure_error_handling(fstripsLexer(filestream))
@@ -49,16 +58,13 @@ class FStripsParser(fstripsVisitor):
             element.addErrorListener(self.error_handler)
         return element
 
-    def __init__(self, problem, raise_on_error=False):
-        self.error_handler = ExceptionRaiserListener() if raise_on_error else None
-        self.current_binding = None
+    @property
+    def init(self):
+        return self.problem.init
 
-        # Shortcuts
-        self.problem = problem
-        self.language = problem.language
-        self.init = problem.init
-
-        self.requirements = set()
+    @property
+    def language(self):
+        return self.problem.language
 
     def visitDomainName(self, ctx):
         self.problem.domain_name = ctx.NAME().getText()
@@ -178,14 +184,17 @@ class FStripsParser(fstripsVisitor):
         binding = VariableBinding(params)
 
         with self.push_variables(params, root=True) as _:
-            precondition, effect = self.visit(ctx.actionDefBody())
+            precondition, effects = self.visit(ctx.actionDefBody())
 
-        self.problem.action(name, binding, precondition, effect)
+        effects, cost_effects = process_cost_effects(effects)
+        if len(cost_effects) > 1:
+            raise SyntaxError(f'Ill-formed action "{name}" with multiple cost effects: {cost_effects}')
+        self.problem.action(name, binding, precondition, effects, cost_effects[0] if cost_effects else None)
 
     def visitActionDefBody(self, ctx):
         prec = self.visit(ctx.precondition())
-        eff = self.visit(ctx.effect())
-        return prec, eff
+        effs = self.visit(ctx.effect())
+        return prec, effs
 
     def visitTrivialPrecondition(self, ctx):
         return Tautology()
@@ -245,7 +254,7 @@ class FStripsParser(fstripsVisitor):
         # The PDDL spec allows for and AND with zero or a single conjunct (e.g. (and p), which Tarski does (rightly) not
         # We thus treat those cases specially.
         if len(conjuncts) == 0:
-            return Tautology
+            return Tautology()
         elif len(conjuncts) == 1:
             return conjuncts[0]
         return CompoundFormula(Connective.And, conjuncts)
@@ -270,8 +279,8 @@ class FStripsParser(fstripsVisitor):
         return variables, formula
 
     def _visit_quantified_effect(self, ctx):
-        """ Universally-quantified effects are different to formulas in that they are shorthand
-            for a list of effects """
+        """ Universally-quantified effects are different to e.g. single-effect formulas, in that they are shorthand
+            for the set of effects that results from all possible instantiations to their variable list. """
         variables = self.visit(ctx.possibly_typed_variable_list())
 
         with self.push_variables(variables, root=False) as _:
@@ -398,12 +407,12 @@ class FStripsParser(fstripsVisitor):
     #     self.constraints = Conjunction(self.visit(ctx.prefConGD()))
 
     def visitProblemMetric(self, ctx):
-        opt_type = ctx.optimization().getText().lower()
+        opt_type = OptimizationType.from_string(ctx.optimization().getText().lower())
         opt_expression = self.visit(ctx.metricFExp())
-        self.problem.metric = OptimizationMetric(opt_expression, opt_type)
+        self.problem.plan_metric = OptimizationMetric(opt_expression, opt_type)
 
     def visitFunctionalExprMetric(self, ctx):
-        return None, self.visit(ctx.functionTerm())
+        return self.visit(ctx.functionTerm())
 
     def visitCompositeMetric(self, ctx):
         return self.visit(ctx.terminalCost()), self.visit(ctx.stageCost())
@@ -426,7 +435,7 @@ class FStripsParser(fstripsVisitor):
         rhs = self.visit(ctx.term())
         operator = {'scale-up': '*', 'scale-down': '/', 'increase': '+', 'decrease': '-'}[operation]
         rhs = self.language.dispatch_operator(get_function_from_symbol(operator), Term, Term, lhs, rhs)
-        return FunctionalEffect(lhs, self.visit(ctx.term()), rhs)
+        return FunctionalEffect(lhs, rhs)
 
     def visitDerivedDef(self, ctx):
         raise UnsupportedLanguageFeature("Parsing of derived predicates in Tarski not yet implemented")

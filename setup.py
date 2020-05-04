@@ -1,18 +1,17 @@
-
 from setuptools import setup, find_packages
 from codecs import open
-from os import path
 import importlib
+import os
 
-here = path.abspath(path.dirname(__file__))
+root = os.path.abspath(os.path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(os.path.join(root, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-# Load the version from ./src/tarski/version.py
-spec = importlib.util.spec_from_file_location('tsk.version', path.join(here, 'src/tarski/version.py'))
+# Load the version number from ./src/tarski/version.py
+spec = importlib.util.spec_from_file_location('tsk.version', os.path.join(root, 'src/tarski/version.py'))
 version = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(version)
 
@@ -28,7 +27,7 @@ def main():
 
         url='https://github.com/aig-upf/tarski',
         author='Miquel Ramírez and Guillem Francès',
-        author_email='guillem.frances@unibas.ch',
+        author_email='guillem.frances@upf.edu',
 
         keywords='planning logic STRIPS RDDL',
         classifiers=[
@@ -44,22 +43,30 @@ def main():
             'Programming Language :: Python :: 3',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
         ],
 
         packages=find_packages('src'),  # include all packages under src
         package_dir={'': 'src'},  # tell distutils packages are under src
 
-
+        python_requires='>=3.6',  # supported Python ranges
         install_requires=[
+            'psutil',
             'antlr4-python3-runtime>=4.7.2',
-            'numpy',
-            'scipy',
-            'pyrddl'
         ],
 
         extras_require={
-            'dev': ['pytest', 'tox', 'pytest-cov', 'mypy'],
             'test': ['pytest', 'tox', 'pytest-cov', 'mypy'],
+            'docs': ['sphinx>=2.1.2', 'recommonmark', 'nbsphinx', 'sphinx_rtd_theme', 'ipykernel', 'ipython'],
+            'sdd': [
+                'Cython',
+                'PySDD>=0.2.9',  # This doesn't seem to fully install pysdd.sdd
+                # 'pysdd@git+https://git@github.com/wannesm/PySDD.git@259e8b5',  # This doesn't seem to work on Travis
+                # 'pysdd@https://github.com/wannesm/PySDD/archive/259e8b5.zip',  # This doesn't seem to work on Travis
+                'cysignals'
+            ],
+            'arithmetic': ['scipy', 'numpy'],
+            'rddl': ['pyrddl'],
         },
 
         # This will include non-code files specified in the manifest, see e.g.

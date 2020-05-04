@@ -1,5 +1,6 @@
-import pytest
+
 import tarski
+import tarski.benchmarks.blocksworld
 import tarski.model
 from tarski.model import Model
 from tarski import errors
@@ -8,6 +9,14 @@ from ..common import blocksworld, numeric
 from tarski.evaluators.simple import evaluate
 from tarski.syntax import Constant, ite, symref
 from tarski.theories import Theory
+from tarski.modules import import_scipy_special
+
+import pytest
+
+try:
+    sci = import_scipy_special()
+except ImportError:
+    pytest.skip('Please install the "arithmetic" extra to run the full suite of tests', allow_module_level=True)
 
 
 def test_interpretation_instance():
@@ -52,7 +61,7 @@ def test_numeric_rel_formula_evaluation():
 
 
 def test_blocksworld_set():
-    lang = blocksworld.generate_small_fstrips_bw_language()
+    lang = tarski.benchmarks.blocksworld.generate_fstrips_bw_language()
     model = Model(lang)
     loc = lang.get_function('loc')
     b1, table = (lang.get_constant(s) for s in ('b1', 'table'))
@@ -62,7 +71,7 @@ def test_blocksworld_set():
 
 
 def test_blocksworld_set_via_square_brackets():
-    lang = blocksworld.generate_small_fstrips_bw_language()
+    lang = tarski.benchmarks.blocksworld.generate_fstrips_bw_language()
     model = Model(lang)
     model.evaluator = evaluate
     loc = lang.get_function('loc')
@@ -197,7 +206,6 @@ def test_special_function_log():
 
 
 def test_special_function_erf():
-    import scipy.special as sci
     from tarski.syntax.arithmetic.special import erf
     lang = tarski.fstrips.language(theories=[Theory.ARITHMETIC, Theory.SPECIAL])
     model = Model(lang)
@@ -208,7 +216,6 @@ def test_special_function_erf():
 
 
 def test_special_function_erfc():
-    import scipy.special as sci
     from tarski.syntax.arithmetic.special import erfc
     lang = tarski.fstrips.language(theories=[Theory.ARITHMETIC, Theory.SPECIAL])
     model = Model(lang)
@@ -271,7 +278,7 @@ def test_arcsin():
 
 
 def test_blocksworld_add():
-    lang = blocksworld.generate_small_fstrips_bw_language()
+    lang = tarski.benchmarks.blocksworld.generate_fstrips_bw_language()
     model = Model(lang)
     clear = lang.get_predicate('clear')
     b1 = lang.get_constant('b1')
@@ -282,7 +289,7 @@ def test_blocksworld_add():
 
 
 def test_blocksworld_add_and_remove():
-    lang = blocksworld.generate_small_fstrips_bw_language()
+    lang = tarski.benchmarks.blocksworld.generate_fstrips_bw_language()
     model = Model(lang)
 
     clear = lang.get_predicate('clear')
@@ -338,7 +345,7 @@ def test_predicate_extensions():
 
 
 def test_predicate_without_equality():
-    lang = tarski.language(theories=[])
+    lang = tarski.language(theories=[Theory.ARITHMETIC])
     leq = lang.predicate('leq', lang.Integer, lang.Integer)
     f = lang.function('f', lang.Object, lang.Integer)
     o1 = lang.constant("o1", lang.Object)
@@ -366,6 +373,11 @@ def test_model_list_extensions():
 
     model = Model(lang)
     model.evaluator = evaluate
+
+    # Test that empty extensions are also returned by `list_all_extensions`
+    extensions = model.list_all_extensions()
+    assert extensions[p.signature] == set()
+    assert len(extensions[f.signature]) == 0
 
     model.set(f, o1, o2)
     model.add(p, o1, o2)
@@ -411,7 +423,7 @@ def test_model_as_atoms():
 def test_predicate_without_equality_reals():
     import numpy
 
-    lang = tarski.language(theories=[])
+    lang = tarski.language(theories=[Theory.ARITHMETIC])
     leq = lang.predicate('leq', lang.Real, lang.Real)
     w = lang.function('w', lang.Object, lang.Real)
     o1 = lang.constant("o1", lang.Object)
