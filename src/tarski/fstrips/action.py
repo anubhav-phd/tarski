@@ -1,5 +1,4 @@
 from ..syntax.ops import flatten
-from .fstrips import AddEffect, DelEffect
 
 
 class Action:
@@ -12,6 +11,9 @@ class Action:
         self.precondition = precondition
         self.effects = effects
         self.cost = cost
+
+    def sort(self):
+        return [x.sort for x in self.parameters]
 
     def __lt__(self, other):
         return self.name < other.name

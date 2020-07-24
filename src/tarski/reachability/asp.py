@@ -4,14 +4,14 @@
 import itertools
 
 from ..fstrips.action import AdditiveActionCost
-from ..syntax.transform import remove_quantifiers, QuantifierEliminationMode, expand_universal_effect
+from ..syntax.transform import remove_quantifiers, QuantifierEliminationMode
 from ..syntax.builtins import symbol_complements
 from ..syntax.ops import free_variables
 from ..syntax import Formula, Atom, CompoundFormula, Connective, Term, Variable, Constant, Tautology, \
     BuiltinPredicateSymbol, QuantifiedFormula, Quantifier, CompoundTerm
-from ..syntax.sorts import parent
+from ..syntax.sorts import parent, Interval
 from ..fstrips import Problem, SingleEffect, AddEffect, DelEffect, FunctionalEffect
-from ..fstrips.representation import identify_cost_related_functions
+from ..fstrips.representation import identify_cost_related_functions, expand_universal_effect
 
 GOAL = "goal"
 
@@ -60,9 +60,9 @@ class ReachabilityLPCompiler:
 
         # Declare the type hierarchy, e.g. with a rule "object(X) :- block(X)."
         for s in lang.sorts:
-            if not s.builtin:  # TODO Decide what to do with builtins
+            if not isinstance(s, Interval):  # TODO Decide what to do with intervals
                 p = parent(s)
-                if p is not None and len(list(s.domain())) > 0:
+                if p is not None and next(s.domain(), None) is not None:
                     # Don't output the type hierarchy rule if the type has no element
                     lp.rule(self.lp_atom(p.name, [_var()], prefix='type'),
                             [self.lp_atom(s.name, [_var()], prefix='type')])
@@ -94,7 +94,7 @@ class ReachabilityLPCompiler:
 
         self.process_goal(problem.goal, lang, lp)
 
-        self.add_directives(problem, lp)
+        # self.add_directives(problem, lp)
 
     def process_goal(self, goal, lang, lp):
         # Process goal, e.g. "goal :- on(a,b), on(b,c)." (note that the goal is always ground)
@@ -149,8 +149,8 @@ class ReachabilityLPCompiler:
         atom = self.lp_atom(action.name, [make_variable_name(v.symbol) for v in action.parameters], prefix='action')
         return atom, atom
 
-    def add_directives(self, problem, lp):
-        return
+    # def add_directives(self, problem, lp):  # pylint: disable-msg=W0613,
+    #     return
 
     def process_formula(self, f: Formula):
         """ Process a given formula and return the corresponding LP rule body, along with declaring in the given LP
@@ -273,7 +273,7 @@ class VariableOnlyReachabilityLPCompiler(ReachabilityLPCompiler):
 
     def __init__(self, problem: Problem, lp, include_variable_inequalities=False, include_action_costs=False):
         if include_action_costs:
-            raise RuntimeError(f'Cannot generate a variable-only reachability LP that includes action costs')
+            raise RuntimeError('Cannot generate a variable-only reachability LP that includes action costs')
         super().__init__(problem, lp, include_variable_inequalities, include_action_costs=False)
 
     def process_action(self, action, lang, lp):
@@ -423,4 +423,4 @@ def generate_varname(avoid=None):
         name = _var(i)
         if name not in avoid:
             return name
-    raise RuntimeError(f"Couldn't generate unused variable name")
+    raise RuntimeError("Couldn't generate unused variable name")

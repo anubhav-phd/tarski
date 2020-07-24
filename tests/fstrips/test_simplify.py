@@ -2,10 +2,11 @@ import tarski.benchmarks.blocksworld
 from tarski.benchmarks.counters import generate_fstrips_counters_problem
 from tarski.fstrips import UniversalEffect
 from tarski.fstrips.manipulation import Simplify
-from tarski.syntax import symref, land, lor, neg, bot, top, forall
+from tarski.fstrips.manipulation.simplify import simplify_existential_quantification
+from tarski.syntax import symref, land, lor, neg, bot, top, forall, exists
 
 
-def test_replacement_of_static_terms_by_constants():
+def test_simplifier():
     problem = generate_fstrips_counters_problem(ncounters=3)
     lang = problem.language
     value, max_int, counter, val_t, c1 = lang.get('value', 'max_int', 'counter', 'val', 'c1')
@@ -42,6 +43,13 @@ def test_replacement_of_static_terms_by_constants():
 
     simp = s.simplify()
     assert str(simp.get_action('increment').precondition) == '<(value(c),6)'
+
+    # Make sure there is no mention to the compiled away "max_int" symbol in the language
+    assert not simp.language.has_function("max_int")
+
+    # Make sure there is no mention to the compiled away "max_int" symbol in the initial state
+    exts = list(simp.init.list_all_extensions().keys())
+    assert ('max_int', 'val') not in exts
 
 
 def test_simplification_of_negation():
@@ -82,3 +90,22 @@ def test_simplification_pruning():
 
     # increment action must be pruned because all its effects are statically inapplicable:
     assert len(s.simplify().actions) == 0
+
+
+def test_simplification_of_ex_quantification():
+    problem = generate_fstrips_counters_problem(ncounters=3)
+    lang = problem.language
+    value, max_int, counter, val_t, c1 = lang.get('value', 'max_int', 'counter', 'val', 'c1')
+    x = lang.variable('x', counter)
+    z = lang.variable('z', counter)
+    two, three, six = [lang.constant(c, val_t) for c in (2, 3, 6)]
+
+    phi = exists(z, land(x == z, top, value(z) < six))
+    assert simplify_existential_quantification(phi, inplace=False) == land(top, value(x) < six), \
+        "z has been replaced by x and removed from the quantification list, thus removing the quantifier"
+
+    phi = exists(x, z, land(x == z, z == x, value(z) < six, flat=True))
+    assert simplify_existential_quantification(phi, inplace=False) == exists(x, value(x) < six), \
+        "The circular substitution dependency has been treated appropriately and only one substitution performed"
+
+

@@ -52,7 +52,11 @@ def main():
         python_requires='>=3.6',  # supported Python ranges
         install_requires=[
             'psutil',
-            'antlr4-python3-runtime>=4.7.2',
+            'multipledispatch',
+
+            # Antlr pinned to a specific version to avoid messages "ANTLR runtime and generated code versions disagree"
+            # messages. If we want to bump this up, we'll need to regenerate the grammar files with the new version.
+            'antlr4-python3-runtime==4.7.2',
         ],
 
         extras_require={

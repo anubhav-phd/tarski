@@ -47,8 +47,17 @@ class Sort:
         except AttributeError:
             if x in self._domain:
                 return x
-            raise ValueError("Cast: Symbol '{}' does not belong to domain {}".format(x, self))
+            raise ValueError(f"Cast: Symbol '{x}' does not belong to domain {self}")
         return None
+
+    def to_constant(self, x):
+        """ Cast the given element to a constant of this sort. """
+        from . import Constant, Variable
+        if isinstance(x, (Constant, Variable)) and x.sort == self:
+            return x
+        if x not in self._domain:
+            raise ValueError(f"Cast: Symbol '{x}' does not belong to domain {self}")
+        return Constant(x, self)
 
     def cardinality(self):
         return len(self._domain)
@@ -85,7 +94,9 @@ class Interval(Sort):
         self.upper_bound = upper_bound
 
     def extend(self, constant):
-        pass  # TODO ???
+        # Overload to avoid doing any extension.
+        # TODO Better would be to subclass not from Sort but from a different, common baseclass
+        pass
 
     def cardinality(self):
         return self.upper_bound - self.lower_bound + 1
@@ -102,6 +113,13 @@ class Interval(Sort):
         if not self.is_within_bounds(y):
             raise ValueError("Cast: Symbol '{}' (encoded '{}') outside of defined interval bounds".format(x, y))
         return y
+
+    def to_constant(self, x):
+        """ Cast the given element to a constant of this sort. """
+        from . import Constant, Variable
+        if isinstance(x, (Constant, Variable)) and x.sort == self:
+            return x
+        return Constant(self.cast(x), self)
 
     def contains(self, x):
         """ Returns true iff the given value belongs to the current domain """
@@ -135,6 +153,12 @@ class Interval(Sort):
 
     def dump(self):
         return dict(name=self.name, domain=[self.lower_bound, self.upper_bound])
+
+    def domain(self):
+        if self.builtin or self.upper_bound - self.lower_bound > 9999:  # Yes, very hacky
+            raise err.TarskiError(f'Cannot iterate over interval with range [{self.lower_bound}, {self.upper_bound}]')
+        from . import Constant
+        return (Constant(x, self) for x in range(self.lower_bound, self.upper_bound+1))
 
 
 def inclusion_closure(s: Sort) -> Generator[Sort, None, None]:

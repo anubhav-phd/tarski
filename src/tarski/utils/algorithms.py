@@ -1,5 +1,6 @@
 import sys
 from collections import deque, defaultdict
+from functools import singledispatch, update_wrapper
 
 
 def transitive_closure(elements):

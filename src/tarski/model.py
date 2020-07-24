@@ -1,4 +1,7 @@
+from typing import Union
+
 from . import errors as err
+from .errors import UndefinedElement
 from .syntax import Function, Constant, CompoundTerm, symref
 from .syntax.predicate import Predicate
 
@@ -158,6 +161,16 @@ class Model:
         return f'Model(num_predicates="{npreds}", num_functions="{nfuns}")'
     __repr__ = __str__
 
+    def remove_symbol(self, symbol: Union[Function, Predicate]):
+        """ Remove the extension of the given symbol, if it existed within this model"""
+        # Note that it might well be that the language contains a symbol p, but it is not registered
+        # in the model, because e.g. there is no p-atom that is true in the model
+        signature = symbol.signature
+        if signature in self.function_extensions:
+            del self.function_extensions[signature]
+        elif signature in self.predicate_extensions:
+            del self.predicate_extensions[signature]
+
 
 def create(lang, evaluator=None):
     """ Create a Tarski model with given evaluator. """
@@ -181,9 +194,6 @@ class ExtensionalFunctionDefinition:
 
     def __iter__(self):
         yield from self.data.items()
-
-# class IntensionalFunctionDefinition:
-#     pass
 
 
 def wrap_tuple(tup):
