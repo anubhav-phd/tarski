@@ -191,7 +191,7 @@ def translate_expression(lang, rddl_expr):
             return k
 
     # print(rddl_expr, expr_type, type(expr_sym))
-    assert False
+    raise RuntimeError(f"Unknown expression type '{expr_type}'")
 
 
 class Parameters:
@@ -272,13 +272,13 @@ class Reader:
         for fluent, value in self.rddl_model.instance.init_state:
             expr = translate_expression(self.language, ('pvar_expr', fluent))
             if isinstance(expr, Term):
-                self.x0.setx(expr, value)
+                self.x0.set(expr, value)
             if isinstance(expr, Atom) and value is True:
                 self.x0.add(expr.predicate, *expr.subterms)
         for fluent, value in self.rddl_model.non_fluents.init_non_fluent:
             expr = translate_expression(self.language, ('pvar_expr', fluent))
             if isinstance(expr, Term):
-                self.x0.setx(expr, value)
+                self.x0.set(expr, value)
             if isinstance(expr, Atom) and value is True:
                 self.x0.add(expr.predicate, *expr.subterms)
 
@@ -443,7 +443,7 @@ class Writer:
         return ', '.join([str(r) for r in self.task.requirements])
 
     def get_types(self):
-        from ..syntax.sorts import parent
+        from ..syntax.sorts import parent  # pylint: disable=import-outside-toplevel  # Avoiding circular references
         type_decl_list = []
         for S in self.task.L.sorts:
             if S.builtin or S.name == 'object':
@@ -660,8 +660,10 @@ class Writer:
             elif expr.symbol == BFS.MUL:
                 re_sym = 'prod'
             return '{}_{{{}}} ({})'.format(re_sym, ','.join(re_vars), re_expr)
+        raise RuntimeError(f"Unknown expression type for '{expr}'")
 
-    def get_fluent(self, fl, next_state=False):
+    @staticmethod
+    def get_fluent(fl, next_state=False):
         try:
             head = fl.symbol.signature[0]
         except AttributeError:

@@ -5,11 +5,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-
 ### Added
 ### Removed
 ### Deprecated
 ### Fixed
+
+## [0.7.0]
+### Added
+  - Added some basic forward search capabilities (#101).
+  - Import psutil module conditionally, to offer better support for non-Linux 
+    platforms where it is not available (see discussion in #99). 
+
+### Removed
+  - Removed support for `PySDD` and `sdd` extra, which was largely unused, and
+    hard to integrate into the CI testing.
+
+### Deprecated
+  - Model.set() is now deprecated
+
+### Fixed
+ - Fixed a bug in `check_hypergraph_acyclicity` reported by @abcorrea.
+
+
+## [0.6.0]- 2020-09-18
+### Changed
+  - Switched license to the Apache Software Licence 2.0 (#92)
+
+### Fixed
+  - Minor bugfixes and improvements.
+  - Better compliance with pylint warnings and errors.  
 
 
 ## [0.5.1] - 2020-04-17
@@ -18,8 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [0.5.0] - 2020-04-17
-### Changed
-
 ### Added
   - Improved documentation (still work in progress though).
   - Added methods to simplify problems, actions, logical expressions based on evaluation
@@ -38,10 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added some methods to the `fstrips.representation` module to check and compute delete-free relaxations of problems.
   - Modularize Tarski dependencies so that the use and  installation of numpy, scipy, etc. is optional.
   - Generation of action schema CSPs.
-  
-### Removed
-### Deprecated
-### Fixed
 
 
 ## [0.4.0] - 2019-12-28
@@ -63,8 +81,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     ([#43](https://github.com/aig-upf/tarski/issues/43)).
  - Added some preliminary support for the NDL representation language.
 
-### Removed
-### Deprecated
 ### Fixed
  - Fixed some minor bugs in FSTRIPS writer.
  - Fixed bug in ReachabilityLPCompiler when problem has an action and a predicate with the same name (7e9a684).
@@ -88,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Fixed bug with multiple conditional effects in [FSTRIPS / PDDL parser](https://github.com/aig-upf/tarski/commit/c89ac31623171b78689d5d0ae3eca07c2be2ad71).
  - Fix bug in printing of FSTRIPS instances [#69](https://github.com/aig-upf/tarski/issues/69).
  - Some other minor bugfixes.
+
 
 ## [0.2.0] - 2019-07-16
 ### Added

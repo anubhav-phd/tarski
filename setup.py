@@ -51,20 +51,20 @@ def main():
 
         python_requires='>=3.6',  # supported Python ranges
         install_requires=[
-            'psutil',
-            'antlr4-python3-runtime>=4.7.2',
+            # psutil not supported on Windows, we haven't tested in other platforms, but since it's not essential
+            # to the functioning of Tarski, better be conservative here and install only on Linux.
+            'psutil; platform_system=="Linux"',
+
+            'multipledispatch',
+
+            # Antlr pinned to a specific version to avoid messages "ANTLR runtime and generated code versions disagree"
+            # messages. If we want to bump this up, we'll need to regenerate the grammar files with the new version.
+            'antlr4-python3-runtime==4.7.2',
         ],
 
         extras_require={
             'test': ['pytest', 'tox', 'pytest-cov', 'mypy'],
             'docs': ['sphinx>=2.1.2', 'recommonmark', 'nbsphinx', 'sphinx_rtd_theme', 'ipykernel', 'ipython'],
-            'sdd': [
-                'Cython',
-                'PySDD>=0.2.9',  # This doesn't seem to fully install pysdd.sdd
-                # 'pysdd@git+https://git@github.com/wannesm/PySDD.git@259e8b5',  # This doesn't seem to work on Travis
-                # 'pysdd@https://github.com/wannesm/PySDD/archive/259e8b5.zip',  # This doesn't seem to work on Travis
-                'cysignals'
-            ],
             'arithmetic': ['scipy', 'numpy'],
             'rddl': ['pyrddl'],
         },

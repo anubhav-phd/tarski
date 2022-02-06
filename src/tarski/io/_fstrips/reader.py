@@ -231,9 +231,11 @@ class FStripsParser(fstripsVisitor):
 
     def visitGenericFunctionTerm(self, ctx):
         symbol = ctx.logical_symbol_name().getText().lower()
-        func = self.language.get_function(symbol)
+        fun = self.language.get_function(symbol)
         subterms = [self.visit(t) for t in ctx.term()]
-        return func(*subterms)
+        assert len(fun.domain) == len(subterms)
+        subterms = tuple(s.to_constant(x) if not isinstance(x, Term) else x for s, x in zip(fun.domain, subterms))
+        return fun(*subterms)
 
     def visitBinaryArithmeticFunctionTerm(self, ctx):
         op = ctx.builtin_binary_function().getText().lower()
@@ -362,8 +364,10 @@ class FStripsParser(fstripsVisitor):
 
     def visitInitFunctionAssignment(self, ctx):
         fun, subterms = self.visit(ctx.flat_term())
+        assert len(fun.domain) == len(subterms)
         value = self.visit(ctx.constant_name())
-        self.init.setx(fun(*subterms), value)
+        subterms = tuple(s.to_constant(x) for s, x in zip(fun.domain, subterms))
+        self.init.set(fun(*subterms), value)
 
     def visitFlat_atom(self, ctx):
         predicate = self.language.get_predicate(ctx.predicate().getText().lower())

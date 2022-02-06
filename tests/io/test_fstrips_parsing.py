@@ -2,13 +2,14 @@
 import pytest
 from tarski.errors import UndefinedSort, UndefinedPredicate
 from tarski.fstrips import AddEffect, FunctionalEffect
+from tarski.fstrips.errors import InvalidEffectError
 from tarski.io.fstrips import ParsingError, FstripsReader
 from tarski.syntax import Atom, CompoundFormula, Tautology
 from tarski.syntax.util import get_symbols
 from tarski.theories import Theory
 
 from tests.common.spider import generate_spider_language
-from tests.io.common import reader, collect_strips_benchmarks
+from tests.io.common import reader, parse_benchmark_instance
 
 
 def get_rule(name):
@@ -159,10 +160,14 @@ def test_functional_effects():
     read = _setup_function_environment(theories=[Theory.EQUALITY, Theory.ARITHMETIC])
     _test_inputs([
         ("(assign (f o1) o1)", "effect"),
-        ("(assign (f o1) 10)", "effect"),
-        ("(assign (f o1) (+ 5 15))", "effect"),
-        ("(assign (f o1) (- 10 2))", "effect"),
+        ("(assign (f o1) (f (f o2)))", "effect"),
     ], r=read)
+
+    with pytest.raises(InvalidEffectError):
+        _test_inputs([
+            ("(assign (f o1) 5))", "effect"),  # RHS not compatible with LHS sort
+            # ("(assign (f o1) (+ 5 15))", "effect"),  # RHS not compatible with LHS sort
+        ], r=read)
 
     # Likely we won't check this at the grammar level
     # with pytest.raises(ParsingError):
@@ -231,8 +236,7 @@ def test_types():
 
 def test_symbol_casing():
     """ Test the special casing for PDDL parsing. See issue #67 """
-    instance_file, domain_file = collect_strips_benchmarks(["spider-sat18-strips:p01.pddl"])[0]
-    problem = reader().read_problem(domain_file, instance_file)
+    problem = parse_benchmark_instance("spider-sat18-strips:p01.pddl")
 
     # PDDL parsing represents all symbols in lowercase. The PDDL contains a predicate TO-DEAL, but will get lowercased
     _ = problem.language.get_predicate("to-deal")

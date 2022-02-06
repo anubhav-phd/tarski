@@ -3,9 +3,12 @@ import copy
 from collections import defaultdict
 
 import pytest
+
 from tarski import theories, Term, Constant
+from tarski.benchmarks.blocksworld import generate_strips_bw_language
 from tarski.fstrips import fstrips
-from tarski.syntax import symref, CompoundFormula, Atom, ite, AggregateCompoundTerm, CompoundTerm, lor
+from tarski.syntax import symref, CompoundFormula, Atom, ite, AggregateCompoundTerm, CompoundTerm, lor, Tautology, \
+    Contradiction, land, top, bot
 from tarski.theories import Theory
 from tarski import errors as err
 from tarski import fstrips as fs
@@ -342,8 +345,41 @@ def test_term_hash_raises_exception():
     assert counter[atom] == 2
 
 
-def test_syntax_exceptions():
-    from tarski.errors import TarskiError
-    with pytest.raises(TarskiError):
-        atoms = []
-        _ = lor(*atoms, flat=True)
+def test_syntax_shorthands():
+    assert lor(*[]) == Contradiction(), "a lor(·) of no disjuncts is False"
+    assert land(*[]) == Tautology(), "a land(·) of no conjuncts is True"
+    assert land(bot & top) == bot & top, "A land(·) of a single element returns that single element"
+
+
+def test_numeric_sort_deduction():
+    lang = fstrips.language(theories=[Theory.EQUALITY, Theory.ARITHMETIC])
+
+    plus0 = Constant(1, lang.Integer) + 1
+    # Disable the test temporarily until we address issue #93
+    # assert plus0.sort == lang.Integer
+
+    # The sorts
+    particle = lang.sort('bowl')
+
+    eggs = lang.function('eggs', lang.Object, lang.Integer)
+    bowl_1 = lang.constant('bowl_1', particle)
+    plus1 = eggs(bowl_1) + 1
+
+    # Disable the test temporarily until we address issue #93
+    # assert plus1.sort == lang.Integer
+
+
+def test_language_equality():
+    lang1 = generate_strips_bw_language(nblocks=2)
+    lang2 = generate_strips_bw_language(nblocks=2)
+
+    # At the moment it's not clear what kind of FOL language object comparison we want.
+    # Ideally we'd want to make sure that the language contains exactly the same vocabulary,
+    # including the same objects/constants, the same sorts, etc. But this is too expensive to
+    # compare on the fly. To alleviate this, we could "freeze" the language objects and compute and store a hash
+    # But so far it's not clear it's worth the effort, as we don't have an obvious use case where this would be
+    # necessary.
+    # assert lang1 == lang2
+    #
+    # lang1.constant('c', 'object')
+    # assert lang1 != lang2

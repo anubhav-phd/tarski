@@ -10,7 +10,7 @@ from ..model import Model
 
 
 # TODO We will need to extend this so that the interpretation depends on a certain, given sigma of values to
-# TODO the free variables in the given termn / sentence, as is standard in textbook-FOL
+# TODO the free variables in the given term / sentence, as is standard in textbook-FOL
 def evaluate(element, m: Model, sigma=None):
     """ Evaluate the denotation of a given formula or term over a given model """
     sigma = sigma if sigma is not None else {}
@@ -103,7 +103,7 @@ def evaluate_term(term, m: Model, sigma):
     try:
         return m.value(term.symbol, arguments)
     except KeyError:
-        raise err.UndefinedTerm(term)
+        raise err.UndefinedTerm(term) from None
 
 
 def evaluate_builtin_predicate(atom, model, sigma):

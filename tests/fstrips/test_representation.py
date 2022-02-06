@@ -5,14 +5,12 @@ from tarski.fstrips.representation import collect_effect_free_parameters, projec
     identify_cost_related_functions, compute_delete_free_relaxation, is_delete_free, is_strips_problem, \
     is_conjunction_of_positive_atoms, is_strips_effect_set, compile_away_formula_negated_literals, \
     compile_action_negated_preconditions_away, compile_negated_preconditions_away, compute_complementary_atoms
-from tarski.syntax import exists, land, neg
+from tarski.syntax import exists, land, neg, symref, substitute_expression, forall
 from tarski.fstrips import representation as rep, AddEffect, DelEffect
 from tarski.syntax.ops import flatten
-
-from tests.common import blocksworld
 from tarski.benchmarks.blocksworld import generate_fstrips_bw_language, generate_fstrips_blocksworld_problem, \
     generate_strips_blocksworld_problem
-from tests.io.common import collect_strips_benchmarks, reader
+from tests.io.common import parse_benchmark_instance
 
 
 def test_basic_representation_queries():
@@ -80,8 +78,7 @@ def test_free_variables_in_schema_manipulations():
 
 
 def test_effect_free_variables_in_organic_synthesis():
-    instance_file, domain_file = collect_strips_benchmarks(["organic-synthesis-opt18-strips:p01.pddl"])[0]
-    problem = reader().read_problem(domain_file, instance_file)
+    problem = parse_benchmark_instance("organic-synthesis-opt18-strips:p01.pddl")
     free = collect_effect_free_parameters(problem.get_action('additionofrohacrossgemdisubstitutedalkene'))
     names = sorted(x.expr.symbol for x in free)
     assert names == ['?h_3', '?h_4', '?r0_7', '?r1_8', '?r2_9']
@@ -100,8 +97,7 @@ def test_effect_free_variables_in_organic_synthesis():
 
 
 def test_effect_free_variables_in_caldera():
-    instance_file, domain_file = collect_strips_benchmarks(["caldera-opt18-adl:p01.pddl"])[0]
-    problem = reader().read_problem(domain_file, instance_file)
+    problem = parse_benchmark_instance("caldera-opt18-adl:p01.pddl")
 
     act = problem.get_action('get_domain')
     free = collect_effect_free_parameters(act)
@@ -135,8 +131,7 @@ def test_cost_function_identification():
     functions = identify_cost_related_functions(problem)
     assert functions == set()
 
-    instance_file, domain_file = collect_strips_benchmarks(["agricola-opt18-strips:p01.pddl"])[0]
-    problem = reader().read_problem(domain_file, instance_file)
+    problem = parse_benchmark_instance("agricola-opt18-strips:p01.pddl")
     functions = identify_cost_related_functions(problem)
     assert functions == {"group_worker_cost"}
 
@@ -285,3 +280,27 @@ def test_compute_complementary_atoms():
     assert list(compute_complementary_atoms(problem.init, testpred)) == []
 
     # assert len(list(compute_complementary_atoms(problem.init, lang.get('clear')))) == 2
+
+
+def test_simple_expression_substitutions():
+    lang = tarski.benchmarks.blocksworld.generate_strips_bw_language(nblocks=2)
+    clear, b1, b2 = [lang.get(name) for name in ('clear', 'b1', 'b2')]
+    x, y = lang.variable('x', 'object'), lang.variable('y', 'object')
+
+    formula = clear(x)
+    replaced = substitute_expression(formula, substitution={symref(x): b1}, inplace=False)
+    replaced2 = substitute_expression(formula, substitution={symref(x): b2}, inplace=False)
+
+    assert not formula.is_syntactically_equal(replaced)
+    assert str(formula) == "clear(x)" and str(replaced) == "clear(b1)" and str(replaced2) == "clear(b2)"
+
+    # Now let's do the same but inplace
+    replaced = substitute_expression(formula, substitution={symref(x): b1}, inplace=True)
+
+    assert formula.is_syntactically_equal(replaced)
+    assert str(formula) == str(replaced) == "clear(b1)"
+
+    formula = forall(x, clear(x) & clear(y))
+    replaced = substitute_expression(formula, substitution={symref(x): b1, symref(y): b2}, inplace=False)
+    assert str(formula) == "forall x : ((clear(x) and clear(y)))" and \
+           str(replaced) == "forall b1 : ((clear(b1) and clear(b2)))"

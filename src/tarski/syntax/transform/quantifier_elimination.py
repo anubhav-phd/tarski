@@ -6,9 +6,8 @@ import itertools
 from enum import Enum
 
 from ... import errors as err
-from .substitutions import create_substitution
+from .substitutions import create_substitution, substitute_expression
 from ..formulas import land, lor, Quantifier, QuantifiedFormula, Atom, Tautology, Contradiction, CompoundFormula
-from ..transform import term_substitution, to_prenex_negation_normal_form
 from .errors import TransformationError
 
 
@@ -59,14 +58,14 @@ class QuantifierElimination:
         return phi
 
     def _expand(self, phi: QuantifiedFormula, creator):
-        from ...grounding.naive import instantiation
+        from ...grounding.naive import instantiation  # pylint: disable=import-outside-toplevel  # Avoiding circular references
         card, syms, substs = instantiation.enumerate_groundings(phi.variables)
         if card == 0:
             raise TransformationError("quantifier elimination", phi, "No constants were defined!")
         conjuncts = []
         for values in itertools.product(*substs):
             subst = create_substitution(syms, values)
-            conjuncts.append(term_substitution(phi.formula, subst))
+            conjuncts.append(substitute_expression(phi.formula, subst))
         return creator(*conjuncts)
 
     def convert(self):

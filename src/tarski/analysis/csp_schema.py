@@ -4,7 +4,8 @@ from pathlib import Path
 
 from ..fstrips.manipulation import Simplify
 from ..errors import TarskiError
-from ..fstrips.representation import is_conjunction_of_literals, has_state_variable_shape
+from ..fstrips.representation import is_conjunction_of_literals, has_state_variable_shape, \
+    collect_effect_free_parameters
 from ..grounding.common import StateVariableLite
 from ..syntax import QuantifiedFormula, Quantifier, Contradiction, CompoundFormula, Atom, CompoundTerm, \
     is_neg, symref, Constant, Variable, Tautology, top
@@ -36,6 +37,8 @@ class CSPInformation:
         self.name_to_vardata = dict()
         self.vardata = list()
         self.constraints = []
+        self.effect_relevant_variables = set()
+        self.parameter_index = []
 
     def add_constraint(self, c):
         self.constraints.append(c)
@@ -129,6 +132,9 @@ class CSPCompiler:
         csp = CSPInformation()
         csp.parameter_index = [self.variable(p, csp, "param") for p in action.parameters]
         self.compile_expression(precondition, csp)
+
+        eff_free_vars = collect_effect_free_parameters(action)
+        csp.effect_relevant_variables = [x for x in action.parameters if symref(x) not in eff_free_vars]
         return csp
 
     def compile_expression(self, node, csp, reify=False, negate=False):
@@ -180,6 +186,8 @@ class CSPCompiler:
         else:
             raise CSPSchemaCompilationError(f'Unexpected expression "{node}" of type "{type(node)}"')
 
+        return None
+
     def variable(self, expression, csp, type_, is_reification_var=False):
         """ """
         cspvartype = CSPVarType.Bool if is_reification_var else CSPVarType.Int
@@ -214,31 +222,41 @@ class CSPCompiler:
         sanitized = action.name
 
         with open(os.path.join(path, f'{sanitized}.csp'), 'w') as f:
-            print(f'variables', file=f)
+            print('variables', file=f)
             print(len(csp.vardata), file=f)
             for name, type_, cspvartype, range_ in csp.vardata:
                 print(f'{name} {type_} {cspvartype} {range_[0]} {range_[1]}', file=f)
-            print(f'end-variables', file=f)
+            print('end-variables', file=f)
 
-            print(f'parameter-index', file=f)
+            print('effect-relevant-variables', file=f)
+            if len(csp.effect_relevant_variables) == len(csp.parameter_index):
+                # We don't want any special treatment for the effect-relevant parameters, as all parameters are relevant
+                print(0, file=f)
+            else:
+                print(len(csp.effect_relevant_variables), file=f)
+                for name in csp.effect_relevant_variables:
+                    print(name, file=f)
+            print('end-effect-relevant-variables', file=f)
+
+            print('parameter-index', file=f)
             print(len(csp.parameter_index), file=f)
             for name in csp.parameter_index:
                 print(f'{name}', file=f)
-            print(f'end-parameter-index', file=f)
+            print('end-parameter-index', file=f)
 
-            print(f'constraints', file=f)
+            print('constraints', file=f)
             print(len(csp.constraints), file=f)
             for c in csp.constraints:
                 if isinstance(c, TableConstraint):
-                    print(f'table-constraint', file=f)
+                    print('table-constraint', file=f)
                     print(f'{c.symbol} negative={c.negative} ' + " ".join(c.variables), file=f)
                 elif isinstance(c, StateVariableConstraint):
                     sv_id = self.state_variables.get_index(StateVariableLite.from_atom(c.expr))
-                    print(f'statevar=const', file=f)
+                    print('statevar=const', file=f)
                     print(f'{sv_id} {c.value}', file=f)
                 elif isinstance(c, RelationalConstraint):
-                    print(f'relational', file=f)
+                    print('relational', file=f)
                     print(f'{c.lhs} {c.rel} {c.rhs}', file=f)
                 else:
                     raise RuntimeError(f'Constraint printer for constraints like "{c}" not yet implemented')
-            print(f'end-constraints', file=f)
+            print('end-constraints', file=f)

@@ -5,6 +5,7 @@ from collections import defaultdict, OrderedDict
 from typing import Union
 
 from . import errors as err
+from .errors import UndefinedElement
 from .syntax import Function, Constant, Variable, Sort, inclusion_closure, Predicate, Interval
 from .syntax.algebra import Matrix
 from . import modules
@@ -42,6 +43,27 @@ class FirstOrderLanguage:
         memo[id(self)] = self
         return self
 
+    # NOTE: At the moment it's not clear what kind of FOL language object comparison we want.
+    # Ideally we'd want to make sure that the language contains exactly the same vocabulary,
+    # including the same objects/constants, the same sorts, etc. But this is too expensive to
+    # compare on the fly. To alleviate this, we could "freeze" the language objects and compute and store a hash
+    # But so far it's not clear it's worth the effort, as we don't have an obvious use case where this would be
+    # necessary.
+    #
+    # def __hash__(self):
+    #     return hash((self.__class__,
+    #                  self.name,
+    #                  self.vocabulary(),
+    #                  self._sorts.keys(),
+    #                  self.theories))
+    #
+    # def __eq__(self, other):
+    #     return (self.__class__ is other.__class__ and
+    #             self.name == other.name and
+    #             self.vocabulary() == other.vocabulary() and
+    #             self._sorts.keys() == other._sorts.keys() and
+    #             self.theories == other.theories)
+
     def deepcopy(self):
         """ Use this method instead of copy.deepcopy() if you need a true deep-copy of the language """
         memo = dict()
@@ -50,6 +72,13 @@ class FirstOrderLanguage:
         for k, v in self.__dict__.items():
             setattr(newone, k, copy.deepcopy(v, memo))
         return newone
+
+    def vocabulary(self):
+        """ Return the vocabulary corresponding to this language. This is a triple with the signatures of, resp.,
+        predicates, functions and constants of the language. """
+        return (tuple(p.signature for p in self._predicates.values() if not p.builtin),
+                tuple(f.signature for f in self._functions.values() if not f.builtin),
+                tuple(c.signature for c in self._constants.values()))
 
     @property
     def sorts(self):
@@ -128,23 +157,24 @@ class FirstOrderLanguage:
             raise err.UndefinedSort(name)
         return self._sorts[name]
 
-    def interval(self, name, parent: Interval, lower_bound=None, upper_bound=None):
+    def interval(self, name, parent: Interval, lower_bound, upper_bound):
         """ Create a (bound) interval sort.
 
         We allow only the new sort to derive from the built-in natural, integer or real sorts.
         """
         self._check_name_not_defined(name, self._sorts, err.DuplicateSortDefinition)
+        parent = self._retrieve_sort(parent)
 
         if parent not in (self.Real, self.Natural, self.Integer):
-            raise err.SemanticError("Cannot create interval that does not subclass one of "
-                                    "the real, integer or natural sort")
+            raise err.SemanticError("Only intervals derived or real, integer or naturals are allowed")
+
+        # if (lower_bound is None) != (upper_bound is None):
+        #     raise err.SemanticError("Either set both interval bounds or set none")
 
         if upper_bound <= lower_bound:
-            raise err.SemanticError("Cannot create interval where the upper bound is greater or "
-                                    "equal than the lower bound")
+            raise err.SemanticError("Cannot create interval with upper bound is <= than the lower bound")
 
         sort = Interval(name, self, parent.encode, lower_bound, upper_bound)
-        sort.builtin = parent.builtin
         self._sorts[name] = sort
         self._global_index[name] = sort
 
@@ -158,12 +188,12 @@ class FirstOrderLanguage:
         sort = self._retrieve_sort(sort)
         return Variable(name, sort)
 
-    def set_parent(self, sort: Sort, parent: Sort):
+    def set_parent(self, sort: Sort, parent: Sort, overwrite=False):
         if parent.language is not self:
             raise err.LanguageError("Tried to set as parent a sort from a different language")
 
         p = self.immediate_parent.get(sort, None)
-        if p is not None:
+        if not overwrite and p is not None:
             raise err.LanguageError(f'Tried to set parent of sort "{sort}", which has already parent {p}')
 
         self.immediate_parent[sort] = parent
@@ -265,6 +295,16 @@ class FirstOrderLanguage:
             raise err.UndefinedPredicate(name)
         return self._predicates[name]
 
+    def remove_symbol(self, symbol: Union[Function, Predicate]):
+        if symbol.name in self._predicates:
+            del self._predicates[symbol.name]
+        elif symbol.name in self._functions:
+            del self._functions[symbol.name]
+        else:
+            raise UndefinedElement(symbol)
+
+        del self._global_index[symbol.name]
+
     def function(self, name: str, *args):
         self._check_name_not_defined(name, self._functions, err.DuplicateFunctionDefinition)
 
@@ -331,14 +371,14 @@ class FirstOrderLanguage:
         try:
             return self._operators[(operator, t)](term)
         except KeyError:
-            raise err.LanguageError("Operator '{}' not defined on domain ({})".format(operator, t))
+            raise err.LanguageError(f"Operator '{operator}' not defined on domain ({t})") from None
 
     def dispatch_operator(self, operator, t1, t2, lhs, rhs):
         # assert isinstance(lhs, t1)
         # assert isinstance(rhs, t2)
         op = self._operators.get((operator, t1, t2), None)
         if op is None:
-            raise err.LanguageError("Operator '{}' not defined on domain ({}, {})".format(operator, t1, t2))
+            raise err.LanguageError(f"Operator '{operator}' not defined on domain ({t1}, {t2})")
 
         return op(lhs, rhs)
 

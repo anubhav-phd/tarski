@@ -29,7 +29,7 @@ class Sort:
         return hash(self.name)
 
     def __eq__(self, other):
-        return self.name == other.name and self.language == other.language
+        return self.name == other.name
 
     def contains(self, x):
         """ Return true iff the current sort contains a constant with the given value  """
@@ -47,8 +47,17 @@ class Sort:
         except AttributeError:
             if x in self._domain:
                 return x
-            raise ValueError("Cast: Symbol '{}' does not belong to domain {}".format(x, self))
+            raise ValueError(f"Cast: Symbol '{x}' does not belong to domain {self}") from None
         return None
+
+    def to_constant(self, x):
+        """ Cast the given element to a constant of this sort. """
+        from . import Constant, Variable  # pylint: disable=import-outside-toplevel  # Avoiding circular references
+        if isinstance(x, (Constant, Variable)) and x.sort == self:
+            return x
+        if x not in self._domain:
+            raise ValueError(f"Cast: Symbol '{x}' does not belong to domain {self}")
+        return Constant(x, self)
 
     def cardinality(self):
         return len(self._domain)
@@ -68,8 +77,8 @@ class Sort:
 
 
 class Interval(Sort):
-    def __init__(self, name, lang, encode_fn, lower_bound=None, upper_bound=None):
-        super().__init__(name, lang, builtin=True)
+    def __init__(self, name, lang, encode_fn, lower_bound, upper_bound, builtin=False):
+        super().__init__(name, lang, builtin=builtin)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.encode = encode_fn
@@ -85,7 +94,9 @@ class Interval(Sort):
         self.upper_bound = upper_bound
 
     def extend(self, constant):
-        pass  # TODO ???
+        # Overload to avoid doing any extension.
+        # TODO Better would be to subclass not from Sort but from a different, common baseclass
+        pass
 
     def cardinality(self):
         return self.upper_bound - self.lower_bound + 1
@@ -102,6 +113,13 @@ class Interval(Sort):
         if not self.is_within_bounds(y):
             raise ValueError("Cast: Symbol '{}' (encoded '{}') outside of defined interval bounds".format(x, y))
         return y
+
+    def to_constant(self, x):
+        """ Cast the given element to a constant of this sort. """
+        from . import Constant, Variable  # pylint: disable=import-outside-toplevel  # Avoiding circular references
+        if isinstance(x, (Constant, Variable)) and x.sort == self:
+            return x
+        return Constant(self.cast(x), self)
 
     def contains(self, x):
         """ Returns true iff the given value belongs to the current domain """
@@ -127,14 +145,20 @@ class Interval(Sort):
         while p is not None:
             try:
                 z = p.cast(x)
-            except ValueError:
-                raise err.LanguageError()
+            except ValueError as e:
+                raise err.LanguageError() from e
             if z is not None and x != z:
                 return None
             p = parent(p)
 
     def dump(self):
         return dict(name=self.name, domain=[self.lower_bound, self.upper_bound])
+
+    def domain(self):
+        if self.builtin or self.upper_bound - self.lower_bound > 9999:  # Yes, very hacky
+            raise err.TarskiError(f'Cannot iterate over interval with range [{self.lower_bound}, {self.upper_bound}]')
+        from . import Constant  # pylint: disable=import-outside-toplevel  # Avoiding circular references
+        return (Constant(x, self) for x in range(self.lower_bound, self.upper_bound+1))
 
 
 def inclusion_closure(s: Sort) -> Generator[Sort, None, None]:
@@ -187,19 +211,19 @@ def build_the_bools(lang):
 
 
 def build_the_naturals(lang):
-    the_nats = Interval('Natural', lang, int_encode_fn, 0, 2 ** 32 - 1)
+    the_nats = Interval('Natural', lang, int_encode_fn, 0, 2 ** 32 - 1, builtin=True)
     the_nats.builtin = True
     return the_nats
 
 
 def build_the_integers(lang):
-    the_ints = Interval('Integer', lang, int_encode_fn, -(2 ** 31 - 1), 2 ** 31 - 1)
+    the_ints = Interval('Integer', lang, int_encode_fn, -(2 ** 31 - 1), 2 ** 31 - 1, builtin=True)
     the_ints.builtin = True
     return the_ints
 
 
 def build_the_reals(lang):
-    reals = Interval('Real', lang, float_encode_fn, -3.40282e+38, 3.40282e+38)
+    reals = Interval('Real', lang, float_encode_fn, -3.40282e+38, 3.40282e+38, builtin=True)
     reals.builtin = True
     return reals
 
@@ -224,3 +248,10 @@ def compute_direct_sort_map(lang):
     res = {s: [] for s in lang.sorts if not s.builtin}
     _ = [res[o.sort].append(o) for o in lang.constants()]
     return res
+
+
+def get_closest_builtin_sort(s: Sort):
+    for par in inclusion_closure(s):
+        if par.builtin:
+            return par
+    return None
